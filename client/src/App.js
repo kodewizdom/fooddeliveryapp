@@ -3,13 +3,14 @@ import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Route, Routes } from "react-router-dom";
-import { validateUserJWTToken } from "./api";
+import { getAllCartItems, validateUserJWTToken } from "./api";
 import { app } from "./config/firebase.config";
 import { Dashboard, Login, Main } from "./containers";
 import { setUserDetails } from "./context/actions/userActions"
 import { fadeInOut } from "./animations";
-import MainLoader from "./components/MainLoader";
-import { Alert } from "./components";
+import { Alert, MainLoader, CheckOutSuccess, UsersOrder } from "./components";
+import { setCartItems } from "./context/actions/cartActions";
+
 
 
 const App = () => {
@@ -25,6 +26,12 @@ const App = () => {
             if (cred) {
                 cred.getIdToken().then((token) => {
                     validateUserJWTToken(token).then((data) => {
+                        if (data) {
+                            getAllCartItems(data.user_id).then((items) => {
+                                console.log(items);
+                                dispatch(setCartItems(items));
+                            });
+                        }
                         dispatch(setUserDetails(data));
                     });
                 });
@@ -45,6 +52,9 @@ const App = () => {
                 <Route path="/*" element={<Main />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/dashboard/*" element={<Dashboard />} />
+                <Route path="/checkout-success" element={<CheckOutSuccess />} />
+                <Route path="/user-orders" element={<UsersOrder />} />
+                
             </Routes>
 
             {alert?.type && <Alert type={alert?.type} message={alert?.message} />}
