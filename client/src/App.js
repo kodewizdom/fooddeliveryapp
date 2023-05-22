@@ -8,7 +8,7 @@ import { app } from "./config/firebase.config";
 import { Dashboard, Login, Main } from "./containers";
 import { setUserDetails } from "./context/actions/userActions"
 import { fadeInOut } from "./animations";
-import { Alert, MainLoader, CheckOutSuccess, UsersOrder } from "./components";
+import { Alert, MainLoader, CheckOutSuccess, UsersOrder, ChatBot, AboutUs, ContactUs } from "./components";
 import { setCartItems } from "./context/actions/cartActions";
 
 
@@ -54,6 +54,9 @@ const App = () => {
                 <Route path="/dashboard/*" element={<Dashboard />} />
                 <Route path="/checkout-success" element={<CheckOutSuccess />} />
                 <Route path="/user-orders" element={<UsersOrder />} />
+                <Route path="/aboutus" element={<AboutUs/>}/>
+                <Route path="/contact-us" element={<ContactUs/>}/>
+                {/* <Route path="/chatobot" element={<ChatBot />} /> */}
                 
             </Routes>
 

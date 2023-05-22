@@ -54,7 +54,7 @@ const DBLeftSection = () => {
         >
           Add New Item
         </NavLink>
-        <NavLink
+        {/* <NavLink
           to={"/dashboard/users"}
           className={({ isActive }) =>
             isActive
@@ -63,7 +63,7 @@ const DBLeftSection = () => {
           }
         >
           Users
-        </NavLink>
+        </NavLink> */}
       </ul>
       <div className="w full items-center justify-center flex h-225 mt-auto px-2">
         <div className="w-full h-full rounded-md bg-red-400 flex items-center justify-center flex-col gap-3 px-3">

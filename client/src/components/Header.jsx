@@ -47,9 +47,9 @@ const Header = () => {
             className={({ isActive }) =>
               isActive ? isActiveStyles : isNoActiveStyles
             }
-            to={"/menu"}
+            to={"/contact-us"}
           >
-            Menu
+            Contact Us
           </NavLink>
           <NavLink
             className={({ isActive }) =>

@@ -23,3 +23,7 @@ export { default as Cart } from "./Cart";
 export { default as CheckOutSuccess } from "./CheckOutSuccess";
 export { default as OrderData } from "./OrderData";
 export { default as UsersOrder } from "./UsersOrder";
+export { default as Footer } from "./Footer";
+export {default as AboutUs} from "./AboutUs";
+export {default as ContactUs} from "./ContactUs";
+export { default as ChatBot } from "./ChatBot";

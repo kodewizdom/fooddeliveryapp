@@ -159,6 +159,7 @@ import { baseURL, decreaseItemQuantity, getAllCartItems, increaseItemQuantity } 
 import { setCartItems } from "../context/actions/cartActions";
 import { alertNULL, alertSuccess } from "../context/actions/alertAction";
 import axios from "axios";
+import { EmptyCart } from "../assets";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -241,6 +242,7 @@ const Cart = () => {
         ): (
         <>
          <h1 className="text-3xl text-primary font-bold">Empty Cart</h1>
+         <img  className="text-primary font-bold" src={EmptyCart} alt="" />
         </>)}
 
       </div>

@@ -17,7 +17,7 @@ const Home = () => {
             <p className='text-[40px] text-headingColor md:text-[72px] font-sans font-extrabold tracking-wider'
             >The Fastest Delivery in <spna className='text-orange-600'>Your City</spna>
             </p>
-            <p className='text-textColor text-lg'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ducimus delectus eos ipsam reiciendis, dolorem magni id tempora minus voluptatem cumque aut accusantium amet ea, quo quos numquam exercitationem commodi vero illo nostrum distinctio? Ipsum!</p>
+            <p className='text-textColor text-lg'>This Website has the fastest delivery times among all the food delivery apps in your city? Through the use of advanced routing algorithms and efficient dispatch systems, Our Website can get your food delivered to you in record time, often within 30 minutes or less! This means you can enjoy your favorite meals without  waiting for long periods of time. Our speedy delivery times have made it a favorite among busy professionals, students, and anyone who values convenience and efficiency. So next time you're hungry and in a hurry, give Us a try and experience lightning-fast delivery!</p>
             <motion.button {...buttonClick} className='bg-gradient-to-bl from-orange-400 to-orange-600 px-4 py-2 rounded-xl text-black text-base font-semibold'>Order Now</motion.button>
         </div>
 
@@ -33,7 +33,7 @@ const Home = () => {
                         </p>
                         <p className='text-[12px] text-center md:text-base text-lighttextGray font-semibold capitalize'>{data.product_category}</p>
                         <p className='text-sm font-semibold text-headingColor'>
-                            <span className='text-xs text-red-600'>₹</span>
+                            <span className='text-xs text-red-600'>₹</span> 
                             {data.product_price}
                         </p>
 
