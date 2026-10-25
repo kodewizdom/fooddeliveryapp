@@ -1,5 +1,8 @@
 import {getApp, getApps, initializeApp} from "firebase/app";
 import {getStorage} from "firebase/storage";
+// import { FirebaseApp } from "firebase/app";
+// import firebase from 'firebase/app';
+// import 'firebase/firestore';
 
 
 
@@ -18,6 +21,10 @@ const firebaseConfig = {
   const app = getApps.length > 0 ? getApp() : initializeApp(firebaseConfig);
 
   const storage = getStorage(app);
+
+  // var db =firebaseConfig.REACT_APP_FIREBASE_STORAGE_BUCCKET();
+  // var db =getStorage(app);
+  // const db = firebaseConfig.firestore();
 
   export {app, storage};
 

@@ -15,9 +15,8 @@ app.use(express.json());
 const cors = require("cors");
 app.use(cors({ origin: true }));
 app.use((req, res, next) => {
-  res.set("Access-Control-Allow-orgin", "*");
+  res.set("Access-Control-Allow-origin", "*");
   next();
-
 });
 
 // firebase credential

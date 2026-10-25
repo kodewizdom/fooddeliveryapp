@@ -2,9 +2,11 @@ import React from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import './AboutUs.css';
+import BackToTop from "./BackToTop";
 
 const AboutUs = () => {
-    return (<div className="responsive-container-block bigContainer">
+    return (
+    <div className="responsive-container-block bigContainer">
         <Header/>
   <div className="responsive-container-block Container">
     <img className="mainImg" src="https://img.freepik.com/premium-vector/safe-food-delivery_23-2148547689.jpg?size=626&ext=jpg&ga=GA1.2.1942277562.1684654512&semt=ais" alt="Main Image" />
@@ -40,6 +42,7 @@ const AboutUs = () => {
       </button>
     </div>
   </div>
+  <BackToTop/>
   <Footer/>
 </div>
 

@@ -7,6 +7,7 @@
   animation-duration: 1s;
   fill: url("#gradient-fill");
 }
+
 .square {
   animation-iteration-count: infinite;
   animation-duration: 2s;

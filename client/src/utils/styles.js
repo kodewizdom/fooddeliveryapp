@@ -9,7 +9,10 @@ export const statuses = [
     { id: 4, title: "Rice", category: "rice" },
     { id: 5, title: "Curry", category: "curry" }, 
     { id: 6, title: "Chinese", category: "chinese" }, 
-    { id: 7, title: "Bread", category: "bread" },
+    { id: 7, title: "Burger", category: "burger" },
+    { id: 8, title: "Pizza", category: "pizza" },
+    { id: 9, title: "Biryani", category: "biryani" },
+    { id: 10, title: "Chicken", category: "chicken" },
     ];
 
 export const randomData = [
@@ -37,7 +40,7 @@ export const randomData = [
     {
         id:4,
         imageURL:"https://firebasestorage.googleapis.com/v0/b/fullstack-food-app02.appspot.com/o/Images%2F1681413050314_c3.png?alt=media&token=44d06f82-52d6-43e5-8dce-22f1708474b1",
-        product_name:"Chiclen Kebab",
+        product_name:"Chicken Kebab",
         product_category:"Mixed Kebab Plate",
         product_price:"150.00",
     },

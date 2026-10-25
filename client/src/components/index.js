@@ -26,4 +26,4 @@ export { default as UsersOrder } from "./UsersOrder";
 export { default as Footer } from "./Footer";
 export {default as AboutUs} from "./AboutUs";
 export {default as ContactUs} from "./ContactUs";
-export { default as ChatBot } from "./ChatBot";
+export {default as BackToTop} from "./BackToTop";

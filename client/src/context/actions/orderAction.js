@@ -4,9 +4,9 @@ export const setOrders = (data) => {
         orders: data,
     };
 };
+
 export const getOrders = () => {
     return {
         type: "GET_ORDERS",
-        
     };
 };
