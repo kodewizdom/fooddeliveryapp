@@ -1,7 +1,16 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const admin = require("firebase-admin");
 const cors = require("cors");
 require("dotenv").config();
+
+// Connect to MongoDB Atlas
+if (process.env.MONGO_URI) {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => console.log("MongoDB Atlas Connected Successfully!"))
+    .catch((err) => console.error("MongoDB Connection Error:", err.message));
+}
 
 const serviceAccountKey = require("./serviceAccountKey.json");
 
