@@ -1,14 +1,93 @@
 const router = require("express").Router();
-const admin = require("firebase-admin");
-const db = admin.firestore();
 const express = require("express");
-db.settings({ ignoreUndefinedProperties: true });
+const { Product, Cart, Order } = require("../models");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 
+// Initial starter food items to auto-populate MongoDB if empty
+const starterProducts = [
+  {
+    productId: "1001",
+    product_name: "Fresh Strawberries",
+    product_category: "fruits",
+    product_price: "120.00",
+    imageURL: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1002",
+    product_name: "Sweet Pineapples",
+    product_category: "fruits",
+    product_price: "90.00",
+    imageURL: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1003",
+    product_name: "Chocolate Ice Cream",
+    product_category: "deserts",
+    product_price: "85.00",
+    imageURL: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1004",
+    product_name: "Fresh Mint Mojito",
+    product_category: "drinks",
+    product_price: "110.00",
+    imageURL: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1005",
+    product_name: "Classic Cheese Burger",
+    product_category: "burger",
+    product_price: "140.00",
+    imageURL: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1006",
+    product_name: "Italian Pepperoni Pizza",
+    product_category: "pizza",
+    product_price: "260.00",
+    imageURL: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1007",
+    product_name: "Hyderabadi Chicken Biryani",
+    product_category: "biryani",
+    product_price: "220.00",
+    imageURL: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1008",
+    product_name: "Grilled Chicken Kebab",
+    product_category: "chicken",
+    product_price: "180.00",
+    imageURL: "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1009",
+    product_name: "Hakka Noodles",
+    product_category: "chinese",
+    product_price: "130.00",
+    imageURL: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1010",
+    product_name: "Paneer Butter Masala",
+    product_category: "curry",
+    product_price: "190.00",
+    imageURL: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&auto=format&fit=crop&q=80",
+  },
+  {
+    productId: "1011",
+    product_name: "Jeera Fried Rice",
+    product_category: "rice",
+    product_price: "110.00",
+    imageURL: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&auto=format&fit=crop&q=80",
+  },
+];
+
+// 1. CREATE A PRODUCT
 router.post("/create", async (req, res) => {
   try {
-    const id = Date.now();
-
+    const id = Date.now().toString();
     const data = {
       productId: id,
       product_name: req.body.product_name,
@@ -17,345 +96,274 @@ router.post("/create", async (req, res) => {
       imageURL: req.body.imageURL,
     };
 
-    const response = await db.collection("products").doc(`/${id}/`).set(data);
-    console.log(response);
-    return res.status(200).send({ success: true, data: response });
+    const newProduct = await Product.create(data);
+    return res.status(200).send({ success: true, data: newProduct });
   } catch (err) {
-    return res.send({ success: false, msg: `Error:${err}` });
+    return res.send({ success: false, msg: `Error: ${err}` });
   }
 });
 
-// getall the products
+// 2. GET ALL PRODUCTS (Auto-seeds if database is empty)
 router.get("/all", async (req, res) => {
-  (async () => {
-    try {
-      let query = db.collection("products");
-      let response = [];
-      await query.get().then((querysnap) => {
-        let docs = querysnap.docs;
-        docs.map((doc) => {
-          response.push({ ...doc.data() });
-        });
-        return response;
-      });
-      return res.status(200).send({ success: true, data: response });
-    } catch (err) {
-      return res.send({ success: false, msg: `Error :${err}` });
+  try {
+    let products = await Product.find({}).sort({ createdAt: -1 });
+
+    if (products.length === 0) {
+      await Product.insertMany(starterProducts);
+      products = await Product.find({}).sort({ createdAt: -1 });
     }
-  })();
+
+    return res.status(200).send({ success: true, data: products });
+  } catch (err) {
+    return res.send({ success: false, msg: `Error: ${err}` });
+  }
 });
 
-//delete a product
+// 3. DELETE A PRODUCT
 router.delete("/delete/:productId", async (req, res) => {
   const productId = req.params.productId;
   try {
-    await db
-      .collection("products")
-      .doc(`/${productId}/`)
-      .delete()
-      .then((result) => {
-        return res.status(200).send({ success: true, data: result });
-      });
+    const result = await Product.findOneAndDelete({ productId });
+    return res.status(200).send({ success: true, data: result });
   } catch (err) {
-    return res.send({ success: false, msg: `Error :${err}` });
+    return res.send({ success: false, msg: `Error: ${err}` });
   }
 });
 
-// create a cart
+// 4. ADD ITEM TO CART
 router.post("/addToCart/:userId", async (req, res) => {
   const userId = req.params.userId;
-  const productId = req.body.productId;
+  const productId = String(req.body.productId);
 
   try {
-    const doc = await db
-      .collection("cartItems")
-      .doc(`/${userId}/`)
-      .collection("items")
-      .doc(`/${productId}/`)
-      .get();
+    let cart = await Cart.findOne({ userId });
 
-    if (doc.data()) {
-      const quantity = doc.data().quantity + 1;
-      const updatedItem = await db
-        .collection("cartItems")
-        .doc(`/${userId}/`)
-        .collection("items")
-        .doc(`/${productId}/`)
-        .update({ quantity });
-      return res.status(200).send({ success: true, data: updatedItem });
+    if (!cart) {
+      cart = new Cart({ userId, items: [] });
+    }
+
+    const itemIndex = cart.items.findIndex(
+      (item) => String(item.productId) === productId
+    );
+
+    if (itemIndex > -1) {
+      cart.items[itemIndex].quantity += 1;
     } else {
-      const data = {
+      cart.items.push({
         productId: productId,
         product_name: req.body.product_name,
         product_category: req.body.product_category,
         product_price: req.body.product_price,
         imageURL: req.body.imageURL,
         quantity: 1,
-      };
-      const addItems = await db
-        .collection("cartItems")
-        .doc(`/${userId}/`)
-        .collection("items")
-        .doc(`/${productId}/`)
-        .set(data);
-      return res.status(200).send({ success: true, data: addItems });
+      });
     }
+
+    const updatedCart = await cart.save();
+    return res.status(200).send({ success: true, data: updatedCart.items });
   } catch (err) {
-    return res.send({ success: false, msg: `Error :${err}` });
+    return res.send({ success: false, msg: `Error: ${err}` });
   }
 });
 
-// get all the cartitems for that user
-
+// 5. GET ALL CART ITEMS FOR A USER
 router.get("/getCartItems/:user_id", async (req, res) => {
   const userId = req.params.user_id;
-  (async () => {
-    try {
-      let query = db
-        .collection("cartItems")
-        .doc(`/${userId}/`)
-        .collection("items");
-      let response = [];
-
-      await query.get().then((querysnap) => {
-        let docs = querysnap.docs;
-
-        docs.map((doc) => {
-          response.push({ ...doc.data() });
-        });
-        return response;
-      });
-      return res.status(200).send({ success: true, data: response });
-    } catch (er) {
-      return res.send({ success: false, msg: `Error :${er}` });
-    }
-  })();
+  try {
+    const cart = await Cart.findOne({ userId });
+    return res.status(200).send({ success: true, data: cart ? cart.items : [] });
+  } catch (er) {
+    return res.send({ success: false, msg: `Error: ${er}` });
+  }
 });
 
-// update cart to increase and decrease the quantity
-
+// 6. UPDATE CART QUANTITY (INCREMENT / DECREMENT)
 router.post("/updateCart/:user_id", async (req, res) => {
   const userId = req.params.user_id;
-  const productId = req.query.productId;
+  const productId = String(req.query.productId);
   const type = req.query.type;
 
   try {
-    const doc = await db
-      .collection("cartItems")
-      .doc(`/${userId}/`)
-      .collection("items")
-      .doc(`/${productId}/`)
-      .get();
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(200).send({ success: true, data: [] });
+    }
 
-    if (doc.data()) {
+    const itemIndex = cart.items.findIndex(
+      (item) => String(item.productId) === productId
+    );
+
+    if (itemIndex > -1) {
       if (type === "increment") {
-        const quantity = doc.data().quantity + 1;
-        const updatedItem = await db
-          .collection("cartItems")
-          .doc(`/${userId}/`)
-          .collection("items")
-          .doc(`/${productId}/`)
-          .update({ quantity });
-        return res.status(200).send({ success: true, data: updatedItem });
+        cart.items[itemIndex].quantity += 1;
       } else {
-        if (doc.data().quantity === 1) {
-          await db
-            .collection("cartItems")
-            .doc(`/${userId}/`)
-            .collection("items")
-            .doc(`/${productId}/`)
-            .delete()
-            .then((result) => {
-              return res.status(200).send({ success: true, data: result });
-            });
+        if (cart.items[itemIndex].quantity <= 1) {
+          cart.items.splice(itemIndex, 1);
         } else {
-          const quantity = doc.data().quantity - 1;
-          const updatedItem = await db
-            .collection("cartItems")
-            .doc(`/${userId}/`)
-            .collection("items")
-            .doc(`/${productId}/`)
-            .update({ quantity });
-          return res.status(200).send({ success: true, data: updatedItem });
+          cart.items[itemIndex].quantity -= 1;
         }
       }
+      const updatedCart = await cart.save();
+      return res.status(200).send({ success: true, data: updatedCart.items });
     }
+
+    return res.status(200).send({ success: true, data: cart.items });
   } catch (err) {
-    return res.send({ success: false, msg: `Error :${err}` });
+    return res.send({ success: false, msg: `Error: ${err}` });
   }
 });
-router.post("/create-checkout-session", async (req, res) => {
-  const customer = await stripe.customers.create({
-    metadata: {
-      user_id: req.body.data.user.user_id,
-      cart: JSON.stringify(req.body.data.cart),
-      total: req.body.data.total,
-    },
-  });
 
-  const line_items = req.body.data.cart.map((item) => {
-    return {
-      price_data: {
-        currency: "inr",
-        product_data: {
-          name: item.product_name,
-          images: [item.imageURL],
-          metadata: {
-            id: item.productId,
+// 7. CREATE STRIPE CHECKOUT SESSION
+router.post("/create-checkout-session", async (req, res) => {
+  try {
+    const customer = await stripe.customers.create({
+      metadata: {
+        user_id: req.body.data.user.user_id,
+        cart: JSON.stringify(req.body.data.cart),
+        total: req.body.data.total,
+      },
+    });
+
+    const line_items = req.body.data.cart.map((item) => {
+      return {
+        price_data: {
+          currency: "inr",
+          product_data: {
+            name: item.product_name,
+            images: [item.imageURL],
+            metadata: {
+              id: item.productId,
+            },
+          },
+          unit_amount: Math.round(Number(item.product_price) * 100),
+        },
+        quantity: item.quantity,
+      };
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      shipping_address_collection: { allowed_countries: ["IN"] },
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: { amount: 0, currency: "inr" },
+            display_name: "Free Shipping",
+            delivery_estimate: {
+              minimum: { unit: "hour", value: 2 },
+              maximum: { unit: "hour", value: 4 },
+            },
           },
         },
-        unit_amount: item.product_price * 100,
+      ],
+      phone_number_collection: {
+        enabled: true,
       },
-      quantity: item.quantity,
-    };
-  });
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    shipping_address_collection: { allowed_countries: ["IN"] },
-    shipping_options: [
-      {
-        shipping_rate_data: {
-          type: "fixed_amount",
-          fixed_amount: { amount: 0, currency: "inr" },
-          display_name: "Free Shipping",
-          delivery_estimate: {
-            minimum: { unit: "hour", value: 2 },
-            maximum: { unit: "hour", value: 4 },
-          },
-        },
-      },
-    ],
-    phone_number_collection: {
-      enabled: true,
-    },
-    line_items,
-    customer: customer.id,
-    mode: "payment",
-    success_url: `${process.env.CLIENT_URL}/checkout-success`,
-    cancel_url: `${process.env.CLIENT_URL}/`,
-  });
-  res.send({ url: session.url });
+      line_items,
+      customer: customer.id,
+      mode: "payment",
+      success_url: `${process.env.CLIENT_URL}/checkout-success`,
+      cancel_url: `${process.env.CLIENT_URL}/`,
+    });
+
+    res.send({ url: session.url });
+  } catch (err) {
+    res.status(500).send({ success: false, msg: `Stripe Error: ${err.message}` });
+  }
 });
-let endpointSecret;
-// endpointSecret = process.env.WEBHOOK_SECRET;
+
+// 8. STRIPE WEBHOOK
+let endpointSecret = process.env.WEBHOOK_SECRET;
 
 router.post(
   "/webhook",
   express.raw({ type: "application/json" }),
-  (req, res) => {
+  async (req, res) => {
     const sig = req.headers["stripe-signature"];
     let eventType;
     let data;
 
     if (endpointSecret) {
       let event;
-
       try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        data = event.data.object;
+        eventType = event.type;
       } catch (err) {
-        res.status(400).send(`Webhook Error: ${err.message}`);
-        return;
+        return res.status(400).send(`Webhook Error: ${err.message}`);
       }
-      data = event.data.object;
-      eventType = event.type;
     } else {
-      data = req.body.data.object;
+      data = req.body.data ? req.body.data.object : req.body;
       eventType = req.body.type;
     }
 
-    // Handle the event
     if (eventType === "checkout.session.completed") {
-      stripe.customers.retrieve(data.customer).then((customer) => {
-        console.log("Customer details", customer);
-        console.log("Data", data);
-        createOrder(customer, data, res);
-      });
+      try {
+        const customer = await stripe.customers.retrieve(data.customer);
+        await createOrder(customer, data, res);
+      } catch (e) {
+        console.error("Webhook processing error:", e);
+      }
     }
 
-    // Return a 200 res to acknowledge receipt of the event
     res.send().end();
   }
 );
 
 const createOrder = async (customer, intent, res) => {
-  console.log("Inside the orders");
   try {
-    const orderId = Date.now();
-    const data = {
-      intentId: intent.id,
+    const orderId = Date.now().toString();
+    const orderData = {
+      intentId: intent.id || "",
       orderId: orderId,
       amount: intent.amount_total,
-      created: intent.created,
       payment_method_types: intent.payment_method_types,
-      status: intent.payment_status,
-      customer: intent.customer_details,
-      shipping_details: intent.shipping_details,
+      status: intent.payment_status || "paid",
+      customer: intent.customer_details || {},
+      shipping_details: intent.shipping_details || {},
       userId: customer.metadata.user_id,
-      items: JSON.parse(customer.metadata.cart),
-      // items: JSON.parse(customer.metadata.cart),
+      items: JSON.parse(customer.metadata.cart || "[]"),
       total: customer.metadata.total,
       sts: "preparing",
     };
-    await db.collection("orders").doc(`/${orderId}/`).set(data);
-    deleteCart(customer.metadata.user_id, JSON.parse(customer.metadata.cart));
-    console.log("***********");
-    return res.status(200).send({ success: true });
+
+    await Order.create(orderData);
+    await Cart.findOneAndUpdate(
+      { userId: customer.metadata.user_id },
+      { items: [] }
+    );
+    if (res && !res.headersSent) {
+      return res.status(200).send({ success: true });
+    }
   } catch (err) {
-    console.log(err);
+    console.error("Order creation error:", err);
   }
 };
 
-const deleteCart = async (userId, items) => {
-  console.log("Inside the delete");
-
-  console.log(userId);
-
-  console.log("**************");
-  items.map(async (data) => {
-    console.log("-------------------inside----------", userId, data.productId);
-    await db
-      .collection("cartItems")
-      .doc(`/${userId}/`)
-      .collection("items")
-      .doc(`/${data.productId}/`)
-      .delete()
-      .then(() => console.log("----------------------success------------"));
-  });
-};
-
-//orders
-
+// 9. GET ALL ORDERS
 router.get("/orders", async (req, res) => {
-  (async () => {
-    try {
-      let query = db.collection("orders");
-      let response = [];
-      await query.get().then((querysnap) => {
-        let docs = querysnap.docs;
-        docs.map((doc) => {
-          response.push({ ...doc.data() });
-        });
-        return response;
-      });
-      return res.status(200).send({ success: true, data: response });
-    } catch (err) {
-      return res.send({ success: false, msg: `Error :${err}` });
-    }
-  })();
+  try {
+    const orders = await Order.find({}).sort({ createdAt: -1 });
+    return res.status(200).send({ success: true, data: orders });
+  } catch (err) {
+    return res.send({ success: false, msg: `Error: ${err}` });
+  }
 });
 
-//update the order status
+// 10. UPDATE ORDER STATUS
 router.post("/updateOrder/:order_id", async (req, res) => {
   const order_id = req.params.order_id;
   const sts = req.query.sts;
   try {
-    const updatedItem = await db
-      .collection("orders")
-      .doc(`/${order_id}/`)
-      .update({ sts });
-    return res.status(200).send({ success: true, data: updatedItem });
+    const updatedOrder = await Order.findOneAndUpdate(
+      { orderId: order_id },
+      { sts: sts },
+      { new: true }
+    );
+    return res.status(200).send({ success: true, data: updatedOrder });
   } catch (er) {
-    return res.send({ success: false, msg: `Error :,${er}` });
+    return res.send({ success: false, msg: `Error: ${er}` });
   }
 });
 
