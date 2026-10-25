@@ -1,6 +1,5 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const admin = require("firebase-admin");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -10,15 +9,6 @@ if (process.env.MONGO_URI) {
     .connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Atlas Connected Successfully!"))
     .catch((err) => console.error("MongoDB Connection Error:", err.message));
-}
-
-const serviceAccountKey = require("./serviceAccountKey.json");
-
-// Firebase credential
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccountKey),
-  });
 }
 
 const app = express();
@@ -33,10 +23,10 @@ app.use((req, res, next) => {
 
 // Root check
 app.get("/", (req, res) => {
-  return res.send("Firebase Server is running!");
+  return res.send("Food Delivery API Server is running!");
 });
 
-// App Router that mirrors the Firebase Cloud Function
+// App Router for REST API (supports /api/users and /api/products)
 const functionApp = express();
 functionApp.use(cors({ origin: true }));
 functionApp.use(express.json({ limit: "50mb" }));

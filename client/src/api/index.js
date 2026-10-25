@@ -34,6 +34,16 @@ export const userLogin = async (data) => {
   }
 };
 
+// user login with google credentials
+export const userGoogleLogin = async (data) => {
+  try {
+    const res = await axios.post(`${baseURL}/api/users/google-login`, { ...data });
+    return res.data;
+  } catch (err) {
+    return err.response?.data || { success: false, msg: err.message };
+  }
+};
+
 // add new product
 export const addNewProduct = async (data) => {
   try {

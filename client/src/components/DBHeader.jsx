@@ -8,30 +8,19 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { buttonClick } from "../animations";
 import { useNavigate } from "react-router-dom";
-import { getAuth } from "firebase/auth";
-import { app } from "../config/firebase.config";
 import { setUserNull } from "../context/actions/userActions";
 import { motion } from "framer-motion";
 import { Avatar } from "../assets";
 
 const DBHeader = () => {
   const user = useSelector((state) => state.user);
-  const firebaseAuth = getAuth(app);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const signOut = () => {
     localStorage.removeItem("token");
-    firebaseAuth
-      .signOut()
-      .then(() => {
-        dispatch(setUserNull());
-        navigate("/login", { replace: true });
-      })
-      .catch((err) => {
-        dispatch(setUserNull());
-        navigate("/login", { replace: true });
-      });
+    dispatch(setUserNull());
+    navigate("/login", { replace: true });
   };
 
   return (

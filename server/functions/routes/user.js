@@ -169,4 +169,51 @@ router.get("/all", async (req, res) => {
   }
 });
 
+// 5. GOOGLE LOGIN (MongoDB JWT login/register)
+router.post("/google-login", async (req, res) => {
+  try {
+    const { email, name, picture } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, msg: "Email is required" });
+    }
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      user = await User.create({
+        user_id: Date.now().toString(),
+        name: name || email.split("@")[0],
+        email: email.toLowerCase(),
+        picture:
+          picture || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+        email_verified: true,
+        role: "user",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        role: user.role,
+      },
+      process.env.JWT_SECRET || "default_jwt_secret",
+      { expiresIn: "30d" }
+    );
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return res.status(200).json({
+      success: true,
+      data: userObj,
+      token,
+      msg: "Google login successful",
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, msg: `Error: ${err.message}` });
+  }
+});
+
 module.exports = router;
