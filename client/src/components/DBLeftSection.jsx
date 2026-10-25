@@ -94,7 +94,7 @@ import { isActiveStyles, isNoActiveStyles } from '../utils/styles'
 const DBLeftSection = () => {
   return (
     <div className='h-full py-12 flex flex-col bg-lightOverlay backdrop-blur-md shadow-md min-w-210 w-300 gap-3'>
-        <NavLink to={"/"} className="flex items-center justify-start gap-4">
+        <NavLink to={"/"} className="flex items-center justify-start px-6 gap-4">
         <img src={Logo} className="w-12" alt="" />
         <p className="font-semibold text-xl">City</p>
       </NavLink>
@@ -152,7 +152,7 @@ const DBLeftSection = () => {
       </ul>
       <div className="w-full items-center justify-center flex h-225 mt-auto px-2">
         <div className="w-full h-full rounded-md bg-red-400 flex items-center justify-center flex-col gap-3">
-          <div className="w-12 h-12 border bg-white rounded-full flex irems-center justify-center">
+          <div className="w-12 h-12 border bg-white rounded-full flex items-center justify-center">
             <p className="text-2xl font-bold text-red-500">?</p>
           </div>
 

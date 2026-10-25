@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { buttonClick, slideIn, staggerFadeInOut } from "../animations";
 
 import {
@@ -14,27 +15,87 @@ import {
   decreaseItemQuantity,
   getAllCartItems,
   increaseItemQuantity,
+  placeOrder,
 } from "../api";
 import { setCartItems } from "../context/actions/cartActions";
-import { alertNULL, alertSuccess } from "../context/actions/alertAction";
+import {
+  alertDanger,
+  alertNULL,
+  alertSuccess,
+  alertWarning,
+} from "../context/actions/alertAction";
 import axios from "axios";
 import { EmptyCart } from "../assets";
 
 const Cart = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const cart = useSelector((state) => state.cart);
   const user = useSelector((state) => state.user);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     let tot = 0;
-    if (cart) {
-      cart.map((data) => {
-        tot = tot + data.product_price * data.quantity;
-        setTotal(tot);
+    if (cart && cart.length > 0) {
+      cart.forEach((data) => {
+        tot += (Number(data.product_price) || 0) * (data.quantity || 1);
       });
     }
+    setTotal(tot);
   }, [cart]);
+
+  const handleClearCart = () => {
+    dispatch(setCartItems([]));
+  };
+
+  const handleDirectOrder = async () => {
+    if (!user) {
+      dispatch(alertWarning("Please sign in to place an order"));
+      setTimeout(() => {
+        dispatch(alertNULL());
+      }, 3000);
+      dispatch(setCartOff());
+      navigate("/login");
+      return;
+    }
+
+    const orderData = {
+      userId: user.user_id,
+      cart: cart,
+      total: total,
+      customer: {
+        name: user.name || "Customer",
+        email: user.email || "",
+      },
+      shipping_details: {
+        name: user.name || "Customer",
+        address: {
+          line1: "Cash on Delivery Order",
+          line2: "",
+          country: "India",
+          state: "Online",
+          postal_code: "",
+        },
+      },
+    };
+
+    dispatch(alertSuccess("Placing order..."));
+    const res = await placeOrder(orderData);
+    if (res && res.success) {
+      dispatch(setCartItems([]));
+      dispatch(setCartOff());
+      dispatch(alertSuccess("Order placed successfully!"));
+      setTimeout(() => {
+        dispatch(alertNULL());
+      }, 3000);
+      navigate("/checkout-success");
+    } else {
+      dispatch(alertDanger(res?.msg || "Failed to place order"));
+      setTimeout(() => {
+        dispatch(alertNULL());
+      }, 3000);
+    }
+  };
 
   const handleCheckOut = () => {
     const data = {
@@ -67,23 +128,27 @@ const Cart = () => {
           <BiChevronsRight className="text-[50px] text-textColor" />
         </motion.i>
         <p className="text-2xl text-headingColor font-semibold">Your Cart</p>
-        <motion.i {...buttonClick} className="cursor-pointer">
+        <motion.i
+          {...buttonClick}
+          className="cursor-pointer"
+          onClick={handleClearCart}
+        >
           <FcClearFilters className="text-[30px] text-textColor" />
         </motion.i>
       </div>
       <div className="flex-1 flex flex-col items-start justify-start rounded-t-3xl bg-zinc-900 h-full py-6 gap-3 relative">
         {cart && cart?.length > 0 ? (
           <>
-            <div className="flex flex-col w-full items-start justify-start gap-3 h-[65%] overflow-y-scroll scrollbar-none px-4">
+            <div className="flex flex-col w-full items-start justify-start gap-3 h-[60%] overflow-y-scroll scrollbar-none px-4">
               {cart &&
                 cart?.length > 0 &&
                 cart?.map((item, i) => (
                   <CartItemCard key={i} index={i} data={item} />
                 ))}
             </div>
-            <div className="bg-zinc-800 rounded-t-[60px] w-full h-[20%] flex flex-col items-center justify-center px-4 py-6 gap-2">
+            <div className="bg-zinc-800 rounded-t-[50px] w-full h-[26%] flex flex-col items-center justify-center px-4 py-4 gap-2">
               <div className="w-full flex items-center justify-evenly">
-                <p className="text-3xl text-zinc-500 font-semibold">Total</p>
+                <p className="text-2xl text-zinc-400 font-semibold">Total</p>
                 <p className="text-3xl text-orange-500 font-semibold flex items-center justify-center gap-1">
                   <HiCurrencyRupee className="text-primary" />
                   {total}
@@ -91,10 +156,17 @@ const Cart = () => {
               </div>
               <motion.div
                 {...buttonClick}
-                className="bg-orange-400 w-[70%] px-1 py-3 text-xl text-headingColor font-semibold hover:bg-orange-500 drop-shadow-md rounded-2xl cursor-pointer text-center"
+                className="bg-orange-500 w-[80%] py-2.5 text-lg text-white font-semibold hover:bg-orange-600 drop-shadow-md rounded-2xl cursor-pointer text-center"
+                onClick={handleDirectOrder}
+              >
+                Place Order (COD)
+              </motion.div>
+              <motion.div
+                {...buttonClick}
+                className="bg-zinc-700 w-[80%] py-1.5 text-xs text-gray-300 font-medium hover:bg-zinc-600 drop-shadow-md rounded-xl cursor-pointer text-center"
                 onClick={handleCheckOut}
               >
-                Check Out
+                Pay Online (Card)
               </motion.div>
             </div>
           </>
@@ -142,7 +214,10 @@ export const CartItemCard = ({ index, data }) => {
       className="w-full flex items-center justify-start bg-zinc-800 rounded-md drop-shadow-md px-4 gap-4"
     >
       <img
-        src={data?.imageURL}
+        src={data?.imageURL || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"}
+        onError={(e) => {
+          e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+        }}
         className="w-24 min-w-[94px] h-24 object-contain"
         alt=""
       />

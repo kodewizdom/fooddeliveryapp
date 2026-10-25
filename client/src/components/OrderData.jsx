@@ -201,22 +201,25 @@ const OrderData = ({index,data,admin}) => {
                 {data?.items  && data.items.map((item,j)=>(
                     <motion.div {...staggerFadeInOut(j)} key={j} className='flex items-center justify-center gap-1'>
                         <img
-                        src={item.imageURL}
+                        src={item?.imageURL || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"}
+                        onError={(e) => {
+                            e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+                        }}
                         className='w-10 h-10 object-contain'
                         alt=""
                         />
                         <div className="flex items-start flex-col">
                             <p className='text-base font-semibold text-headingColor'>
-                                {item.product_name}
+                                {item?.product_name || "Food Item"}
                             </p>
                             <div className='flex items-start gap-2'>
                                 <p className='text-sm text-textColor'>
                                     {" "}
-                                    Qty:{item.quantity}
+                                    Qty:{item?.quantity || 1}
                                 </p>
                                 <p className='flex items-center gap-1 textColor'>
                                     <HiCurrencyRupee className='text-base text-red-500'/>
-                                    {parseFloat(item.product_price).toFixed(2)}
+                                    {parseFloat(item?.product_price || 0).toFixed(2)}
                                 </p>
                             </div>
                         </div>
@@ -225,18 +228,18 @@ const OrderData = ({index,data,admin}) => {
             </div>
             <div className='flex items-start justify-start flex-col gap-2 px-6 ml-auto w-full md:w-460'>
                 <h1 className='text-lg text-headingColor font-semibold'>
-                    {data.shipping_details.name}
+                    {data?.shipping_details?.name || data?.customer?.name || "Customer"}
                 </h1>
 
                 <p className='text-base text-headingColor -mt-2'>
-                    {data.customer.email} {data.customer.phone}
+                    {data?.customer?.email || ""} {data?.customer?.phone || ""}
                 </p>
                 <p className='text-base text-textColor -mt-2'>
-                    {data.shipping_details.address.line1},
-                    {data.shipping_details.address.line2}{" "},
-                    {data.shipping_details.address.country},
-                    {data.shipping_details.address.state} -
-                    {data.shipping_details.address.postal_code}
+                    {data?.shipping_details?.address?.line1 || "Direct Delivery"}
+                    {data?.shipping_details?.address?.line2 ? `, ${data.shipping_details.address.line2}` : ""}
+                    {data?.shipping_details?.address?.country ? `, ${data.shipping_details.address.country}` : ""}
+                    {data?.shipping_details?.address?.state ? `, ${data.shipping_details.address.state}` : ""}
+                    {data?.shipping_details?.address?.postal_code ? ` - ${data.shipping_details.address.postal_code}` : ""}
                 </p>
             </div>
         </div>

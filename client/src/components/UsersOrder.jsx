@@ -58,28 +58,31 @@ const UsersOrder = () => {
   useEffect(() => {
     if (!orders) {
       getAllOrder().then((data) => {
-        dispatch(setOrders(data));
-        setUserOrders(data.filter((item) => item.userId === user?.user_id));
+        if (data) {
+          dispatch(setOrders(data));
+          setUserOrders(data.filter((item) => item.userId === user?.user_id));
+        }
       });
     } else {
       setUserOrders(orders.filter((data) => data.userId === user?.user_id));
     }
-  }, [orders]);
+  }, [orders, user]);
 
   return (
     <main className="w-screen min-h-screen flex items-center justify-start flex-col bg-primary">
       <Header />
       <div className="w-full flex flex-col items-start justify-center mt-40 px-6 md:px-24 2xl:px-96 gap-12 pb-24">
-        {userOrders?.length > 0? (
-            <>
-          {userOrders.map((item, i) => (
-          <OrderData key={i} index={i} data={item} admin={false} />
-          ))}
+        {userOrders && userOrders.length > 0 ? (
+          <>
+            {userOrders.map((item, i) => (
+              <OrderData key={i} index={i} data={item} admin={false} />
+            ))}
           </>
         ) : (
-          <>
-            <h1 className="text-[72px] text-headingColor font-bold">No data</h1>
-          </>
+          <div className="flex flex-col items-center justify-center w-full py-16 gap-3">
+            <h1 className="text-3xl text-headingColor font-bold">No Orders Placed Yet</h1>
+            <p className="text-textColor text-base">Your active and past orders will appear here.</p>
+          </div>
         )}
       </div>
     </main>

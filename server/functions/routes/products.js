@@ -213,7 +213,54 @@ router.post("/updateCart/:user_id", async (req, res) => {
   }
 });
 
-// 7. CREATE STRIPE CHECKOUT SESSION
+// 7. DIRECT ORDER PLACEMENT (Cash on delivery / Direct checkout)
+router.post("/create-order", async (req, res) => {
+  try {
+    const { userId, cart, total, customer, shipping_details } = req.body;
+
+    if (!userId || !cart || cart.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Cart is empty or user is missing" });
+    }
+
+    const orderId = Date.now().toString();
+    const orderData = {
+      orderId,
+      userId,
+      items: cart,
+      total: Number(total),
+      sts: "preparing",
+      status: "paid",
+      customer: customer || {},
+      shipping_details: shipping_details || {
+        name: customer?.name || "Customer",
+        address: {
+          line1: "Delivery Order",
+          line2: "",
+          country: "India",
+          state: "Online",
+          postal_code: "",
+        },
+      },
+      intentId: "ORD_" + orderId,
+    };
+
+    const newOrder = await Order.create(orderData);
+    await Cart.findOneAndUpdate({ userId }, { items: [] });
+
+    return res.status(200).json({
+      success: true,
+      data: newOrder,
+      orderId,
+      msg: "Order placed successfully!",
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, msg: `Error: ${err.message}` });
+  }
+});
+
+// 8. CREATE STRIPE CHECKOUT SESSION
 router.post("/create-checkout-session", async (req, res) => {
   try {
     const customer = await stripe.customers.create({

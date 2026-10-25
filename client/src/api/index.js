@@ -158,3 +158,13 @@ export const getAllOrder = async () => {
     return null;
   }
 };
+
+// place a direct order (Cash on Delivery / Direct Checkout)
+export const placeOrder = async (orderData) => {
+  try {
+    const res = await axios.post(`${baseURL}/api/products/create-order`, orderData);
+    return res.data;
+  } catch (error) {
+    return { success: false, msg: error.message };
+  }
+};

@@ -9,7 +9,7 @@ const DataTable = ({columns,data,title,actions}) => {
     <ThemeProvider theme={defaultMaterialTheme}>
         <MaterialTable 
             columns = {columns}
-            data={data}
+            data={data || []}
             title={title}
             actions={actions}
         />
