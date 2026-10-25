@@ -14,6 +14,26 @@ export const validateUserJWTToken = async (token) => {
   }
 };
 
+// user signup with email & password
+export const userSignUp = async (data) => {
+  try {
+    const res = await axios.post(`${baseURL}/api/users/signup`, { ...data });
+    return res.data;
+  } catch (err) {
+    return err.response?.data || { success: false, msg: err.message };
+  }
+};
+
+// user login with email & password
+export const userLogin = async (data) => {
+  try {
+    const res = await axios.post(`${baseURL}/api/users/login`, { ...data });
+    return res.data;
+  } catch (err) {
+    return err.response?.data || { success: false, msg: err.message };
+  }
+};
+
 // add new product
 export const addNewProduct = async (data) => {
   try {

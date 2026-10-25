@@ -21,13 +21,17 @@ const DBHeader = () => {
   const dispatch = useDispatch();
 
   const signOut = () => {
+    localStorage.removeItem("token");
     firebaseAuth
       .signOut()
       .then(() => {
         dispatch(setUserNull());
         navigate("/login", { replace: true });
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        dispatch(setUserNull());
+        navigate("/login", { replace: true });
+      });
   };
 
   return (

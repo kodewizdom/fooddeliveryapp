@@ -64,15 +64,23 @@ const SliderCard = ({ data, index }) => {
                 dispatch(setCartItems(items));
                 // console.log(items);
             });
-            setInterval(()=>{
+            setTimeout(() => {
                 dispatch(alertNULL());
-            },3000);
+            }, 3000);
         });    
     };
      
     return (
         <div className='bg-lightOverlay hover:drop-shadow-lg backdrop-blur-md rounded-xl flex items-center justify-between relative px-4 py-2 w-full md:w-340 md:min-w-350 gap-3'>
-            <img src={data.imageURL} className='w-40 h-40 object-contain' alt="" />
+            <img
+                src={data.imageURL}
+                onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80";
+                }}
+                className='w-40 h-40 object-contain rounded-lg'
+                alt={data.product_name || "Food Item"}
+            />
             <div className='relative pt-12'>
             <p className='text-xl text-headingColor font-semibold'>
                 {data.product_name}

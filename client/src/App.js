@@ -87,25 +87,37 @@ const App = () => {
 
     useEffect(() => {
         setIsLoading(true);
+
+        const token = localStorage.getItem("token");
+        if (token) {
+            validateUserJWTToken(token).then((data) => {
+                if (data) {
+                    getAllCartItems(data.user_id).then((items) => {
+                        dispatch(setCartItems(items));
+                    });
+                    dispatch(setUserDetails(data));
+                }
+            });
+        }
+
         firebaseAuth.onAuthStateChanged((cred) => {
             if (cred) {
                 cred.getIdToken().then((token) => {
                     validateUserJWTToken(token).then((data) => {
-                      if(data){
-                        getAllCartItems(data.user_id).then((items)=>{
-                          console.log(items);
-                          dispatch(setCartItems(items));
-                        });
-                      }
-                        dispatch(setUserDetails(data));
+                        if (data) {
+                            getAllCartItems(data.user_id).then((items) => {
+                                dispatch(setCartItems(items));
+                            });
+                            dispatch(setUserDetails(data));
+                        }
                     });
                 });
             }
-            setInterval(() =>{
-              setIsLoading(false);
-            },3000);
-          });
-        },[firebaseAuth,dispatch])
+            setTimeout(() => {
+                setIsLoading(false);
+            }, 1000);
+        });
+    }, [firebaseAuth, dispatch]);
   return (
     <div className='w-screen min-h-screen h-auto flex flex-col items-center justify-center'>
       {isLoading && (

@@ -258,7 +258,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { app } from "../config/firebase.config";
-import { validateUserJWTToken } from '../api';
+import { validateUserJWTToken, userSignUp, userLogin } from '../api';
 import { setUserDetails } from '../context/actions/userActions';
 import { alertInfo, alertWarning } from '../context/actions/alertAction';
 
@@ -300,52 +300,42 @@ const Login = () => {
 
     const signUpWithEmailPass = async () => {
         if (userEmail === "" || password === "" || confirm_password === "") {
-               dispatch(alertInfo('Required fields should not be empty'));
+            dispatch(alertInfo('Required fields should not be empty'));
+            return;
+        }
+        if (password !== confirm_password) {
+            dispatch(alertWarning("Passwords don't match"));
+            return;
+        }
+
+        const res = await userSignUp({ email: userEmail, password });
+        if (res && res.success && res.token) {
+            localStorage.setItem("token", res.token);
+            dispatch(setUserDetails(res.data));
+            setUserEmail("");
+            setPassword("");
+            setConfirm_password("");
+            navigate("/", { replace: true });
         } else {
-            if (password === confirm_password) {
-                setUserEmail("");
-                setConfirm_password("");
-                setPassword("");
-                await createUserWithEmailAndPassword(
-                    firebaseAuth,
-                    userEmail,
-                    password
-                ).then((userCred) => {
-                    firebaseAuth.onAuthStateChanged((cred) => {
-                        if (cred) {
-                            cred.getIdToken().then((token) => {
-                                validateUserJWTToken(token).then((data) => {
-                                    dispatch(setUserDetails(data));
-                                });
-                                navigate("/", { replace: true });
-                            });
-                        }
-                    });
-                });
-            } else {
-                dispatch(alertWarning("Password doesn't match"));
-            }
+            dispatch(alertWarning(res?.msg || "Signup failed"));
         }
     };
 
     const signInWithEmailPass = async () => {
-        if (userEmail !== "" && password !== "") {
-            await signInWithEmailAndPassword(firebaseAuth, userEmail, password).then(
-                (userCred) => {
-                    firebaseAuth.onAuthStateChanged((cred) => {
-                        if (cred) {
-                            cred.getIdToken().then((token) => {
-                                validateUserJWTToken(token).then((data) => {
-                                      dispatch(setUserDetails(data));
-                                });
-                                navigate("/", { replace: true });
-                            });
-                        }
-                    });
-                }
-            );
+        if (userEmail === "" || password === "") {
+            dispatch(alertInfo("Please enter email and password"));
+            return;
+        }
+
+        const res = await userLogin({ email: userEmail, password });
+        if (res && res.success && res.token) {
+            localStorage.setItem("token", res.token);
+            dispatch(setUserDetails(res.data));
+            setUserEmail("");
+            setPassword("");
+            navigate("/", { replace: true });
         } else {
-              dispatch(alertInfo("Password doesn't match"));
+            dispatch(alertWarning(res?.msg || "Invalid credentials"));
         }
     };
 

@@ -179,13 +179,17 @@ const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const signOut = () => {
+    localStorage.removeItem("token");
     firebaseAuth
       .signOut()
       .then(() => {
         dispatch(setUserNull());
         navigate("/login", { replace: true });
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        dispatch(setUserNull());
+        navigate("/login", { replace: true });
+      });
   };
   return (
     <header className="fixed backdrop-blur-md z-50 inset-x-0 top-0 flex items-center justify-between px-12 md:px-20 py-6">

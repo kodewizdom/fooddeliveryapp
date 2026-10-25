@@ -1,56 +1,172 @@
-const router = require('express').Router();
-const admin = require("firebase-admin");
-let data = [];
+const router = require("express").Router();
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const { User } = require("../models");
 
-
-router.get('/', (req, res) => {
-    return res.send('Inside the user router')
-});
-
+// 1. JWT VERIFICATION (Validates token and returns user profile)
 router.get("/jwtVerification", async (req, res) => {
-    if (!req.headers.authorization) {
-        return res.status(500).send({ msg: "Token Not Found" });
-    }
-    const token = req.headers.authorization.split(" ")[1];
-    try {
-        const decodedValue = await admin.auth().verifyIdToken(token);
-        if (!decodedValue) {
-            return res
-                .status(500)
-                .json({ success: false, msg: "Unauthorized access" });
-        }
-        return res.status(200).json({ success: true, data: decodedValue });
+  if (!req.headers.authorization) {
+    return res.status(401).send({ success: false, msg: "Token Not Found" });
+  }
 
-    } catch (err) {
-        return res.send({
-            success: false,
-            msg: `Error in extracting the token: ${err}`,
-        });
+  const token = req.headers.authorization.split(" ")[1];
+  try {
+    const decodedValue = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "default_jwt_secret"
+    );
+
+    if (!decodedValue) {
+      return res
+        .status(401)
+        .json({ success: false, msg: "Unauthorized access" });
     }
+
+    const user = await User.findOne({ user_id: decodedValue.user_id }).select(
+      "-password"
+    );
+    const userData = user ? user.toObject() : decodedValue;
+
+    return res.status(200).json({ success: true, data: userData });
+  } catch (err) {
+    return res.status(401).send({
+      success: false,
+      msg: `Error in extracting the token: ${err.message}`,
+    });
+  }
 });
 
-const listALlUsers = async (nextpagetoken) => {
-    admin.auth().listUsers(1000, nextpagetoken).then((listuserresult) => {
-        listuserresult.users.forEach((rec) => {
-            data.push(rec.toJSON())
-        });
-        if (listuserresult.pageToken) {
-            listALlUsers(listuserresult.pageToken);
-        }
-    }).catch((er) => console.log(er));
-};
+// 2. USER SIGNUP
+router.post("/signup", async (req, res) => {
+  try {
+    const { email, password, picture } = req.body;
+    const name = req.body.name || (email ? email.split("@")[0] : "User");
 
-listALlUsers();
-
-router.get("/all", async (req, res) => {
-    listALlUsers();
-    try {
-        return res.status(200).send({ success: true, data: data, dataCount: data.length })
-    } catch (er) {
-        return res.send({
-            success: false,
-            msg: `Error in listing users :,${er}`,
-        })
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Please provide email and password" });
     }
-})
-module.exports = router
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Email already registered" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user_id = Date.now().toString();
+    const newUser = await User.create({
+      user_id,
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      picture:
+        picture || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+      email_verified: true,
+      role: email.toLowerCase().includes("admin") ? "admin" : "user",
+    });
+
+    const token = jwt.sign(
+      {
+        user_id: newUser.user_id,
+        name: newUser.name,
+        email: newUser.email,
+        picture: newUser.picture,
+        role: newUser.role,
+      },
+      process.env.JWT_SECRET || "default_jwt_secret",
+      { expiresIn: "30d" }
+    );
+
+    const userObj = newUser.toObject();
+    delete userObj.password;
+
+    return res.status(201).json({
+      success: true,
+      data: userObj,
+      token,
+      msg: "User registered successfully",
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ success: false, msg: `Error: ${err.message}` });
+  }
+});
+
+// 3. USER LOGIN
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Please enter email and password" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, msg: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Invalid password credentials" });
+    }
+
+    const token = jwt.sign(
+      {
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        role: user.role,
+      },
+      process.env.JWT_SECRET || "default_jwt_secret",
+      { expiresIn: "30d" }
+    );
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return res.status(200).json({
+      success: true,
+      data: userObj,
+      token,
+      msg: "Login successful",
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ success: false, msg: `Error: ${err.message}` });
+  }
+});
+
+// 4. GET ALL USERS (For Admin Dashboard)
+router.get("/all", async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).send({
+      success: true,
+      data: users,
+      dataCount: users.length,
+    });
+  } catch (err) {
+    return res.send({
+      success: false,
+      msg: `Error in listing users: ${err.message}`,
+    });
+  }
+});
+
+module.exports = router;
