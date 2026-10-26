@@ -13,6 +13,7 @@ import {
   UsersOrder,
   AboutUs,
   ContactUs,
+  Menu,
 } from "./components";
 import { setCartItems } from "./context/actions/cartActions";
 
@@ -23,6 +24,11 @@ const App = () => {
 
   useEffect(() => {
     setIsLoading(true);
+
+    // Guaranteed safeguard: dismiss loading screen in max 1000ms
+    const safetyTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
 
     const token = localStorage.getItem("token");
     if (token) {
@@ -36,15 +42,15 @@ const App = () => {
           }
         })
         .finally(() => {
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 600);
+          clearTimeout(safetyTimer);
+          setIsLoading(false);
         });
     } else {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 600);
+      clearTimeout(safetyTimer);
+      setIsLoading(false);
     }
+
+    return () => clearTimeout(safetyTimer);
   }, [dispatch]);
 
   return (
@@ -59,6 +65,7 @@ const App = () => {
       )}
       <Routes>
         <Route path="/*" element={<Main />} />
+        <Route path="/menu" element={<Menu />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
         <Route path="/checkout-success" element={<CheckOutSuccess />} />

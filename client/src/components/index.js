@@ -27,3 +27,4 @@ export { default as Footer } from "./Footer";
 export {default as AboutUs} from "./AboutUs";
 export {default as ContactUs} from "./ContactUs";
 export {default as BackToTop} from "./BackToTop";
+export { default as Menu } from "./Menu";

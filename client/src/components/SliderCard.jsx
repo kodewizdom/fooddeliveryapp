@@ -25,19 +25,47 @@ export const CardSkeleton = () => {
 
 const SliderCard = ({ data, index }) => {
     const user = useSelector((state) => state.user);
+    const cart = useSelector((state) => state.cart);
     const dispatch = useDispatch();
     const [imageLoaded, setImageLoaded] = useState(false);
 
     const sendToCart = () => {
-        dispatch(alertSuccess("Added to the cart"));
-        addNewItemToCart(user?.user_id, data).then((res) => {
-            getAllCartItems(user?.user_id).then((items) => {
-                dispatch(setCartItems(items));
-            });
-            setTimeout(() => {
-                dispatch(alertNULL());
-            }, 3000);
-        });
+        if (!user) {
+            dispatch(alertSuccess("Added to cart (Guest)"));
+        } else {
+            dispatch(alertSuccess("Added to the cart"));
+        }
+
+        // 1. Optimistic UI update (0ms instant response)
+        const currentCart = Array.isArray(cart) ? [...cart] : [];
+        const existingIndex = currentCart.findIndex(
+            (item) => String(item.productId) === String(data.productId)
+        );
+
+        let optimisticCart;
+        if (existingIndex > -1) {
+            optimisticCart = currentCart.map((item, i) =>
+                i === existingIndex
+                    ? { ...item, quantity: (Number(item.quantity) || 1) + 1 }
+                    : item
+            );
+        } else {
+            optimisticCart = [...currentCart, { ...data, quantity: 1 }];
+        }
+        dispatch(setCartItems(optimisticCart));
+
+        // 2. Sync with MongoDB Atlas in background
+        if (user?.user_id) {
+            addNewItemToCart(user?.user_id, data).then((res) => {
+                if (res) {
+                    dispatch(setCartItems(res));
+                }
+            }).catch(() => {});
+        }
+
+        setTimeout(() => {
+            dispatch(alertNULL());
+        }, 2000);
     };
 
     return (

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import React, { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { statuses } from '../utils/styles';
+import { homeCategories } from '../utils/styles';
 import { staggerFadeInOut } from '../animations';
 import { IoFastFood } from '../assets/icons';
 import SliderCard, { CardSkeleton } from './SliderCard';
@@ -9,37 +9,6 @@ import SliderCard, { CardSkeleton } from './SliderCard';
 const FilterSection = () => {
     const products = useSelector((state) => state.products);
     const [category, setCategory] = useState("drinks");
-
-    // Dynamic category list combining presets + custom stored categories + product categories
-    const allCategories = useMemo(() => {
-        const catMap = new Map();
-        statuses.forEach((s) => catMap.set(s.category.toLowerCase(), s));
-
-        // Read any custom categories stored in localStorage
-        try {
-            const savedCustom = JSON.parse(localStorage.getItem("custom_categories") || "[]");
-            savedCustom.forEach((c) => {
-                if (!catMap.has(c.category.toLowerCase())) {
-                    catMap.set(c.category.toLowerCase(), c);
-                }
-            });
-        } catch (e) {}
-
-        // Read any unique categories from fetched products
-        if (products && products.length > 0) {
-            products.forEach((p) => {
-                if (p.product_category && !catMap.has(p.product_category.toLowerCase())) {
-                    catMap.set(p.product_category.toLowerCase(), {
-                        id: Date.now() + Math.random(),
-                        title: p.product_category.charAt(0).toUpperCase() + p.product_category.slice(1),
-                        category: p.product_category.toLowerCase(),
-                    });
-                }
-            });
-        }
-
-        return Array.from(catMap.values());
-    }, [products]);
 
     const filteredProducts = useMemo(() => {
         if (!products) return null;
@@ -58,7 +27,7 @@ const FilterSection = () => {
             </div>
 
             <div className='w-full overflow-x-scroll pt-6 flex items-center justify-start md:justify-center gap-6 py-8 scrollbar-none'>
-                {allCategories.map((data, i) => (
+                {homeCategories.map((data, i) => (
                     <FilterCard
                         key={data.id || i}
                         data={data}

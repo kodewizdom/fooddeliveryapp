@@ -84,6 +84,11 @@ const starterProducts = [
   },
 ];
 
+// High-performance in-memory cache for products
+let productsCache = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 60000; // 60 seconds
+
 // 1. CREATE A PRODUCT
 router.post("/create", async (req, res) => {
   try {
@@ -97,15 +102,21 @@ router.post("/create", async (req, res) => {
     };
 
     const newProduct = await Product.create(data);
+    productsCache = null; // Invalidate cache on new product
     return res.status(200).send({ success: true, data: newProduct });
   } catch (err) {
     return res.send({ success: false, msg: `Error: ${err}` });
   }
 });
 
-// 2. GET ALL PRODUCTS (Auto-seeds if database is empty)
+// 2. GET ALL PRODUCTS (Cached in-memory for instant 0ms responses)
 router.get("/all", async (req, res) => {
   try {
+    const now = Date.now();
+    if (productsCache && now - lastFetchTime < CACHE_TTL) {
+      return res.status(200).send({ success: true, data: productsCache });
+    }
+
     let products = await Product.find({}).sort({ createdAt: -1 });
 
     if (products.length === 0) {
@@ -113,8 +124,13 @@ router.get("/all", async (req, res) => {
       products = await Product.find({}).sort({ createdAt: -1 });
     }
 
+    productsCache = products;
+    lastFetchTime = now;
     return res.status(200).send({ success: true, data: products });
   } catch (err) {
+    if (productsCache) {
+      return res.status(200).send({ success: true, data: productsCache });
+    }
     return res.send({ success: false, msg: `Error: ${err}` });
   }
 });
@@ -124,6 +140,7 @@ router.delete("/delete/:productId", async (req, res) => {
   const productId = req.params.productId;
   try {
     const result = await Product.findOneAndDelete({ productId });
+    productsCache = null; // Invalidate cache on deletion
     return res.status(200).send({ success: true, data: result });
   } catch (err) {
     return res.send({ success: false, msg: `Error: ${err}` });

@@ -2,6 +2,16 @@ export const isActiveStyles = "text-2xl text-red-700 font=semibold hover:text-re
 
 export const isNoActiveStyles = "text-xl text-textColor hover:text-red-700 duration-100 px-4 py-2 transition-all ease-in-out";
 
+export const homeCategories = [
+    { id: 1, title: "Drinks", category: "drinks" },
+    { id: 2, title: "Deserts", category: "deserts" },
+    { id: 3, title: "Fruits", category: "fruits" },
+    { id: 4, title: "Chinese", category: "chinese" },
+    { id: 5, title: "Pizza", category: "pizza" },
+    { id: 6, title: "Biryani", category: "biryani" },
+    { id: 7, title: "Chicken", category: "chicken" },
+];
+
 export const statuses = [
     { id: 1, title: "Drinks", category: "drinks" }, 
     { id: 2, title: "Deserts", category: "deserts" }, 
@@ -13,7 +23,7 @@ export const statuses = [
     { id: 8, title: "Pizza", category: "pizza" },
     { id: 9, title: "Biryani", category: "biryani" },
     { id: 10, title: "Chicken", category: "chicken" },
-    ];
+];
 
 export const randomData = [
     {

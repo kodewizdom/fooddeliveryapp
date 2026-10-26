@@ -149,23 +149,46 @@ const Cart = () => {
 
 export const CartItemCard = ({ index, data }) => {
   const user = useSelector((state) => state.user);
+  const cart = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const [itemTotal, setItemTotal] = useState(0);
 
   const decrementCart = (productId) => {
-    decreaseItemQuantity(user?.user_id, productId, "decrement").then(() => {
-      getAllCartItems(user?.user_id).then((items) => {
-        if (items) dispatch(setCartItems(items));
-      });
-    });
+    // 1. Optimistic update (0ms instant response)
+    if (Array.isArray(cart)) {
+      const updated = cart
+        .map((item) =>
+          String(item.productId) === String(productId)
+            ? { ...item, quantity: (Number(item.quantity) || 1) - 1 }
+            : item
+        )
+        .filter((item) => item.quantity > 0);
+      dispatch(setCartItems(updated));
+    }
+    // 2. Background sync with MongoDB Atlas
+    if (user?.user_id) {
+      decreaseItemQuantity(user?.user_id, productId, "decrement").then((res) => {
+        if (res) dispatch(setCartItems(res));
+      }).catch(() => {});
+    }
   };
 
   const incrementCart = (productId) => {
-    increaseItemQuantity(user?.user_id, productId, "increment").then(() => {
-      getAllCartItems(user?.user_id).then((items) => {
-        if (items) dispatch(setCartItems(items));
-      });
-    });
+    // 1. Optimistic update (0ms instant response)
+    if (Array.isArray(cart)) {
+      const updated = cart.map((item) =>
+        String(item.productId) === String(productId)
+          ? { ...item, quantity: (Number(item.quantity) || 1) + 1 }
+          : item
+      );
+      dispatch(setCartItems(updated));
+    }
+    // 2. Background sync with MongoDB Atlas
+    if (user?.user_id) {
+      increaseItemQuantity(user?.user_id, productId, "increment").then((res) => {
+        if (res) dispatch(setCartItems(res));
+      }).catch(() => {});
+    }
   };
 
   useEffect(() => {

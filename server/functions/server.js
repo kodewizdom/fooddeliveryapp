@@ -3,10 +3,14 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
-// Connect to MongoDB Atlas
+// Connect to MongoDB Atlas with optimized cloud options
 if (process.env.MONGO_URI) {
   mongoose
-    .connect(process.env.MONGO_URI)
+    .connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+    })
     .then(() => console.log("MongoDB Atlas Connected Successfully!"))
     .catch((err) => console.error("MongoDB Connection Error:", err.message));
 }

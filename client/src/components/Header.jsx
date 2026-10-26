@@ -43,17 +43,9 @@ const Header = () => {
             className={({ isActive }) =>
               isActive ? isActiveStyles : isNoActiveStyles
             }
-            to={"/contact-us"}
+            to={"/menu"}
           >
-            Contact Us
-          </NavLink>
-          <NavLink
-            className={({ isActive }) =>
-              isActive ? isActiveStyles : isNoActiveStyles
-            }
-            to={"/services"}
-          >
-            Services
+            Menu
           </NavLink>
           <NavLink
             className={({ isActive }) =>
@@ -62,6 +54,14 @@ const Header = () => {
             to={"/aboutus"}
           >
             About Us
+          </NavLink>
+          <NavLink
+            className={({ isActive }) =>
+              isActive ? isActiveStyles : isNoActiveStyles
+            }
+            to={"/contact-us"}
+          >
+            Contact Us
           </NavLink>
         </ul>
         <motion.div
