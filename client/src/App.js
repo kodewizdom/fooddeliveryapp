@@ -14,6 +14,7 @@ import {
   AboutUs,
   ContactUs,
   Menu,
+  Profile,
 } from "./components";
 import { setCartItems } from "./context/actions/cartActions";
 
@@ -54,7 +55,7 @@ const App = () => {
   }, [dispatch]);
 
   return (
-    <div className="w-screen min-h-screen h-auto flex flex-col items-center justify-center">
+    <div className="w-full max-w-full min-h-screen h-auto flex flex-col items-center justify-center overflow-x-hidden">
       {isLoading && (
         <motion.div
           {...fadeInOut}
@@ -66,6 +67,7 @@ const App = () => {
       <Routes>
         <Route path="/*" element={<Main />} />
         <Route path="/menu" element={<Menu />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
         <Route path="/checkout-success" element={<CheckOutSuccess />} />

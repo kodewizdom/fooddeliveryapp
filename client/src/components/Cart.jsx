@@ -12,7 +12,6 @@ import { setCartOff } from "../context/actions/displayCartActions";
 import {
   baseURL,
   decreaseItemQuantity,
-  getAllCartItems,
   increaseItemQuantity,
 } from "../api";
 import { setCartItems } from "../context/actions/cartActions";
@@ -90,7 +89,7 @@ const Cart = () => {
   return (
     <motion.div
       {...slideIn}
-      className="fixed z-50 top-0 right-0 w-300 md:w-508 bg-lightOverlay backdrop-blur-md shadow-md h-screen"
+      className="fixed z-50 top-0 right-0 w-full sm:w-350 md:w-508 max-w-full bg-white shadow-2xl h-screen flex flex-col"
     >
       <div className="w-full flex items-center justify-between py-4 pb-12 px-6">
         <motion.i

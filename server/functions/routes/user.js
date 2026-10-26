@@ -235,4 +235,42 @@ router.post("/google-login", async (req, res) => {
   }
 });
 
+// 6. UPDATE USER PROFILE (Name, Phone, Picture, Address - Email is immutable)
+router.put("/update-profile/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const { name, phone, picture, address } = req.body;
+
+    const user = await User.findOne({ user_id });
+    if (!user) {
+      return res.status(404).json({ success: false, msg: "User not found" });
+    }
+
+    if (name && name.trim()) user.name = name.trim();
+    if (phone !== undefined) user.phone = phone.trim();
+    if (picture) user.picture = picture;
+    if (address) {
+      user.address = {
+        street: address.street || "",
+        city: address.city || "",
+        state: address.state || "",
+        pincode: address.pincode || "",
+      };
+    }
+
+    await user.save();
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return res.status(200).json({
+      success: true,
+      data: userObj,
+      msg: "Profile updated successfully",
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, msg: `Error: ${err.message}` });
+  }
+});
+
 module.exports = router;

@@ -39,11 +39,11 @@ const CheckOutSuccess = () => {
   }, [dispatch]);
 
   return (
-    <main className="w-screen min-h-screen flex items-center justify-start flex-col">
+    <main className="w-full max-w-full min-h-screen flex items-center justify-start flex-col overflow-x-hidden">
       <Header />
-      <div className="w-full flex flex-col items-center justify-center mt-40 px-6 md:px-24 2xl:px-96 gap-12 pb-24">
-        <img src={Bill} className="w-full md:w-656" alt="" />
-        <h1 className="text-[50px] text-headingColor font-bold">
+      <div className="w-full max-w-full flex flex-col items-center justify-center mt-28 md:mt-36 lg:mt-40 px-4 sm:px-8 md:px-16 2xl:px-72 gap-8 pb-24 text-center">
+        <img src={Bill} className="w-full max-w-md sm:max-w-lg md:max-w-xl object-contain" alt="Payment Success Bill" />
+        <h1 className="text-2xl sm:text-4xl md:text-5xl text-headingColor font-bold">
           Amount paid Successfully
         </h1>
         <motion.div {...buttonClick}>

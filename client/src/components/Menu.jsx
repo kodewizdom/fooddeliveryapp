@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { Header, Footer, Cart, BackToTop } from "./index";
 import SliderCard, { CardSkeleton } from "./SliderCard";
 import { statuses } from "../utils/styles";
@@ -13,10 +13,18 @@ const Menu = () => {
   const products = useSelector((state) => state.products);
   const isCart = useSelector((state) => state.isCart);
   const dispatch = useDispatch();
+  const location = useLocation();
 
-  const [activeCategory, setActiveCategory] = useState("drinks");
+  const queryCategory = new URLSearchParams(location.search).get("category");
+  const [activeCategory, setActiveCategory] = useState(queryCategory || "drinks");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("default");
+
+  useEffect(() => {
+    if (queryCategory) {
+      setActiveCategory(queryCategory.toLowerCase());
+    }
+  }, [queryCategory]);
 
   // Ensure products are hydrated on direct navigation to /menu
   useEffect(() => {
@@ -131,10 +139,10 @@ const Menu = () => {
   }, [products, activeCategory, searchTerm, sortBy]);
 
   return (
-    <div className="w-screen min-h-screen flex flex-col items-center justify-start bg-primary">
+    <div className="w-full max-w-full min-h-screen flex flex-col items-center justify-start bg-primary overflow-x-hidden">
       <Header />
 
-      <main className="w-full flex flex-col items-center justify-start mt-36 px-6 md:px-16 2xl:px-64 gap-8 pb-24">
+      <main className="w-full max-w-full flex flex-col items-center justify-start mt-28 md:mt-36 lg:mt-40 px-4 sm:px-8 md:px-16 2xl:px-72 gap-8 pb-24">
         {/* Banner Section */}
         <div className="w-full bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-3xl p-8 md:p-12 text-white shadow-xl shadow-orange-500/10 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
           <div className="flex flex-col items-start gap-3 z-10 max-w-xl">
@@ -193,9 +201,9 @@ const Menu = () => {
           </div>
         </div>
 
-        {/* Categories Bar (Pills styled like Add New Item) */}
+        {/* Categories Bar (Wrap categories so none are hidden) */}
         <div className="w-full flex flex-col items-start gap-3">
-          <div className="w-full flex items-center justify-start gap-3 overflow-x-auto pb-3 pt-1 scrollbar-none">
+          <div className="w-full flex flex-wrap items-center justify-start gap-2.5 sm:gap-3 py-2">
             {allCategories.map((cat) => {
               const isSelected =
                 activeCategory?.toLowerCase() === cat.category?.toLowerCase();
@@ -206,10 +214,10 @@ const Menu = () => {
                     setActiveCategory(cat.category);
                     setSearchTerm("");
                   }}
-                  className={`px-5 py-2.5 rounded-xl text-base font-semibold whitespace-nowrap cursor-pointer transition-all duration-200 shadow-sm ${
+                  className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-sm sm:text-base font-semibold cursor-pointer transition-all duration-150 shadow-sm ${
                     isSelected
-                      ? "bg-red-500 text-white shadow-md shadow-red-200 border border-red-500 scale-105"
-                      : "bg-white/80 text-textColor hover:border-red-300 hover:bg-white border border-gray-200"
+                      ? "bg-red-500 text-white shadow-md shadow-red-200 border-2 border-red-500"
+                      : "bg-white text-textColor hover:border-red-300 hover:bg-gray-50 border border-gray-200"
                   }`}
                 >
                   {cat.title}
@@ -222,20 +230,17 @@ const Menu = () => {
         {/* Dishes Grid */}
         <div className="w-full min-h-[300px]">
           {!products ? (
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="w-full grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <CardSkeleton key={i} />
               ))}
             </div>
           ) : displayedProducts && displayedProducts.length > 0 ? (
-            <motion.div
-              layout
-              className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-            >
+            <div className="w-full grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {displayedProducts.map((data, index) => (
                 <SliderCard key={data.productId || index} data={data} index={index} />
               ))}
-            </motion.div>
+            </div>
           ) : (
             <div className="w-full py-20 flex flex-col items-center justify-center gap-3 bg-white/50 backdrop-blur-md rounded-3xl border border-gray-200/80">
               <IoRestaurantOutline className="text-6xl text-gray-300" />

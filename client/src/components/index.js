@@ -28,3 +28,4 @@ export {default as AboutUs} from "./AboutUs";
 export {default as ContactUs} from "./ContactUs";
 export {default as BackToTop} from "./BackToTop";
 export { default as Menu } from "./Menu";
+export { default as Profile } from "./Profile";

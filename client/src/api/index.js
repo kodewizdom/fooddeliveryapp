@@ -90,6 +90,19 @@ export const getAllUser = async () => {
   }
 };
 
+// update user profile
+export const updateUserProfile = async (user_id, data) => {
+  try {
+    const res = await axios.put(
+      `${baseURL}/api/users/update-profile/${user_id}`,
+      { ...data }
+    );
+    return res.data;
+  } catch (err) {
+    return err.response?.data || { success: false, msg: err.message };
+  }
+};
+
 // add newitems to the cart
 
 export const addNewItemToCart = async (user_id, data) => {

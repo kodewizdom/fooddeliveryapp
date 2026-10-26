@@ -4,25 +4,27 @@ export const isNoActiveStyles = "text-xl text-textColor hover:text-red-700 durat
 
 export const homeCategories = [
     { id: 1, title: "Drinks", category: "drinks" },
-    { id: 2, title: "Deserts", category: "deserts" },
-    { id: 3, title: "Fruits", category: "fruits" },
-    { id: 4, title: "Chinese", category: "chinese" },
-    { id: 5, title: "Pizza", category: "pizza" },
+    { id: 2, title: "Bread", category: "bread" },
+    { id: 3, title: "Burger", category: "burger" },
+    { id: 4, title: "Pizza", category: "pizza" },
+    { id: 5, title: "Chinese", category: "chinese" },
     { id: 6, title: "Biryani", category: "biryani" },
     { id: 7, title: "Chicken", category: "chicken" },
+    { id: 8, title: "Deserts", category: "deserts" },
 ];
 
 export const statuses = [
     { id: 1, title: "Drinks", category: "drinks" }, 
-    { id: 2, title: "Deserts", category: "deserts" }, 
-    { id: 3, title: "Fruits", category: "fruits" }, 
-    { id: 4, title: "Rice", category: "rice" },
-    { id: 5, title: "Curry", category: "curry" }, 
-    { id: 6, title: "Chinese", category: "chinese" }, 
-    { id: 7, title: "Burger", category: "burger" },
-    { id: 8, title: "Pizza", category: "pizza" },
-    { id: 9, title: "Biryani", category: "biryani" },
-    { id: 10, title: "Chicken", category: "chicken" },
+    { id: 2, title: "Bread", category: "bread" },
+    { id: 3, title: "Burger", category: "burger" },
+    { id: 4, title: "Pizza", category: "pizza" },
+    { id: 5, title: "Chinese", category: "chinese" }, 
+    { id: 6, title: "Biryani", category: "biryani" },
+    { id: 7, title: "Chicken", category: "chicken" },
+    { id: 8, title: "Deserts", category: "deserts" }, 
+    { id: 9, title: "Rice", category: "rice" },
+    { id: 10, title: "Curry", category: "curry" }, 
+    { id: 11, title: "Fruits", category: "fruits" },
 ];
 
 export const randomData = [
