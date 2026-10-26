@@ -16,11 +16,15 @@ const DBOrders = () => {
       });
     }
   }, []);
+  const confirmedOrders = orders?.filter(
+    (item) => item.status !== "pending_payment"
+  );
+
   return (
     <div className="flex items-center justify-center flex-col pt-6 w-full gap-4">
-      {orders && orders.length > 0 ? (
+      {confirmedOrders && confirmedOrders.length > 0 ? (
         <>
-          {orders.map((item, i) => (
+          {confirmedOrders.map((item, i) => (
             <OrderData key={i} index={i} data={item} admin={true} />
           ))}
         </>

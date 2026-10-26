@@ -31,22 +31,91 @@ const Login = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    // Ensure Google GSI client library is loaded
+    if (!document.getElementById("google-gsi-client")) {
+      const script = document.createElement("script");
+      script.id = "google-gsi-client";
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  const handleGoogleSuccess = async ({ email, name, picture }) => {
+    try {
+      const res = await userGoogleLogin({ email, name, picture });
+      if (res && res.success && res.token) {
+        localStorage.setItem("token", res.token);
+        dispatch(setUserDetails(res.data));
+        navigate("/", { replace: true });
+      } else {
+        dispatch(alertWarning(res?.msg || "Google login failed"));
+      }
+    } catch (err) {
+      dispatch(alertWarning(err?.message || "Google login failed"));
+    }
+  };
+
   const loginWithGoogle = async () => {
+    const googleClientId =
+      process.env.REACT_APP_GOOGLE_CLIENT_ID ||
+      "618654471143-2qorrcof2bmcblbikvqsier9uam1g3qa.apps.googleusercontent.com";
+
+    // 1. Primary: Use Google Cloud OAuth2 Identity Services
+    if (window.google?.accounts?.oauth2 && googleClientId) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: "email profile openid",
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              try {
+                const userInfoRes = await fetch(
+                  "https://www.googleapis.com/oauth2/v3/userinfo",
+                  {
+                    headers: {
+                      Authorization: `Bearer ${tokenResponse.access_token}`,
+                    },
+                  }
+                );
+                const userInfo = await userInfoRes.json();
+                if (userInfo && userInfo.email) {
+                  await handleGoogleSuccess({
+                    email: userInfo.email,
+                    name: userInfo.name || userInfo.email.split("@")[0],
+                    picture: userInfo.picture,
+                  });
+                } else {
+                  dispatch(alertWarning("Could not retrieve Google profile"));
+                }
+              } catch (e) {
+                dispatch(alertWarning("Failed to retrieve Google profile"));
+              }
+            }
+          },
+          error_callback: (err) => {
+            console.error("Google OAuth error:", err);
+            dispatch(alertWarning("Google Sign-In was cancelled or failed"));
+          },
+        });
+        client.requestAccessToken();
+        return;
+      } catch (err) {
+        console.warn("Google GIS initialization error, falling back to Firebase:", err);
+      }
+    }
+
+    // 2. Fallback: Firebase popup
     try {
       const userCred = await signInWithPopup(firebaseAuth, provider);
       if (userCred && userCred.user) {
-        const res = await userGoogleLogin({
+        await handleGoogleSuccess({
           email: userCred.user.email,
           name: userCred.user.displayName,
           picture: userCred.user.photoURL,
         });
-        if (res && res.success && res.token) {
-          localStorage.setItem("token", res.token);
-          dispatch(setUserDetails(res.data));
-          navigate("/", { replace: true });
-        } else {
-          dispatch(alertWarning(res?.msg || "Google login failed"));
-        }
       }
     } catch (err) {
       dispatch(alertWarning(err?.message || "Google Sign-In failed"));

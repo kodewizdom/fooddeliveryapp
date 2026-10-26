@@ -15,11 +15,23 @@ const UsersOrder = () => {
       getAllOrder().then((data) => {
         if (data) {
           dispatch(setOrders(data));
-          setUserOrders(data.filter((item) => item.userId === user?.user_id));
+          setUserOrders(
+            data.filter(
+              (item) =>
+                item.userId === user?.user_id &&
+                item.status !== "pending_payment"
+            )
+          );
         }
       });
     } else {
-      setUserOrders(orders.filter((data) => data.userId === user?.user_id));
+      setUserOrders(
+        orders.filter(
+          (data) =>
+            data.userId === user?.user_id &&
+            data.status !== "pending_payment"
+        )
+      );
     }
   }, [orders, user]);
 

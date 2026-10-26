@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { statuses } from "../utils/styles";
+import React, { useState, useRef, useEffect } from "react";
+import { statuses as defaultStatuses } from "../utils/styles";
 import { Spinner } from "../components";
 import { FaCloudUploadAlt, MdDelete } from "../assets/icons";
 import { useDispatch } from "react-redux";
@@ -17,54 +17,142 @@ const DBNewItem = () => {
   const [itemName, setItemName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState(null);
+  const [categoriesList, setCategoriesList] = useState(defaultStatuses);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatInput, setNewCatInput] = useState("");
   const [isLoading, setisLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [progress, setProgress] = useState(null);
   const [imageDownloadURL, setImageDownloadURL] = useState(null);
   const fileInputRef = useRef(null);
   const dispatch = useDispatch();
+
+  // Load custom categories saved in localStorage
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("custom_categories") || "[]");
+      if (saved && saved.length > 0) {
+        const catMap = new Map();
+        defaultStatuses.forEach((s) => catMap.set(s.category.toLowerCase(), s));
+        saved.forEach((c) => catMap.set(c.category.toLowerCase(), c));
+        setCategoriesList(Array.from(catMap.values()));
+      }
+    } catch (e) {}
+  }, []);
 
   const resetForm = () => {
     setItemName("");
     setPrice("");
     setCategory(null);
     setImageDownloadURL(null);
-    setProgress(null);
     setisLoading(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  // Handles uploading an image file from local computer (Base64)
-  const uploadImage = (e) => {
-    const imageFile = e.target.files[0];
-    if (!imageFile) return;
-
-    if (imageFile.size > 5 * 1024 * 1024) {
-      dispatch(alertDanger("Image size must be less than 5MB"));
+  // Add custom new category dynamically
+  const handleAddNewCategory = () => {
+    const trimmed = newCatInput.trim();
+    if (!trimmed) {
+      dispatch(alertDanger("Please enter a category name"));
       setTimeout(() => dispatch(alertNULL()), 3000);
       return;
     }
 
-    setisLoading(true);
-    setProgress(50);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setImageDownloadURL(event.target.result);
-      setisLoading(false);
-      setProgress(null);
-      dispatch(alertSuccess("Image loaded successfully"));
-      setTimeout(() => dispatch(alertNULL()), 3000);
+    const catKey = trimmed.toLowerCase();
+    const formattedTitle = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    const newCategoryObj = {
+      id: Date.now(),
+      title: formattedTitle,
+      category: catKey,
     };
-    reader.onerror = () => {
+
+    // Check if category already exists
+    const exists = categoriesList.some((c) => c.category.toLowerCase() === catKey);
+    if (exists) {
+      setCategory(catKey);
+      setIsAddingCategory(false);
+      setNewCatInput("");
+      return;
+    }
+
+    const updatedList = [...categoriesList, newCategoryObj];
+    setCategoriesList(updatedList);
+    setCategory(catKey);
+
+    // Save custom categories to localStorage for persistence
+    try {
+      const saved = JSON.parse(localStorage.getItem("custom_categories") || "[]");
+      saved.push(newCategoryObj);
+      localStorage.setItem("custom_categories", JSON.stringify(saved));
+    } catch (e) {}
+
+    setIsAddingCategory(false);
+    setNewCatInput("");
+    dispatch(alertSuccess(`Category "${formattedTitle}" added!`));
+    setTimeout(() => dispatch(alertNULL()), 2500);
+  };
+
+  // Fast client-side image compression using Canvas
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Fast WebP / JPEG export at 0.82 quality (<80KB)
+          const compressed =
+            canvas.toDataURL("image/webp", 0.82) ||
+            canvas.toDataURL("image/jpeg", 0.82);
+          resolve(compressed);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  // Handles fast uploading and compressing image
+  const uploadImage = async (e) => {
+    const imageFile = e.target.files[0];
+    if (!imageFile) return;
+
+    setisLoading(true);
+    try {
+      const compressedDataURL = await compressImage(imageFile);
+      setImageDownloadURL(compressedDataURL);
       setisLoading(false);
-      setProgress(null);
+      dispatch(alertSuccess("Image loaded and optimized!"));
+      setTimeout(() => dispatch(alertNULL()), 2000);
+    } catch (err) {
+      setisLoading(false);
       dispatch(alertDanger("Failed to read image file"));
       setTimeout(() => dispatch(alertNULL()), 3000);
-    };
-    reader.readAsDataURL(imageFile);
+    }
   };
 
   const deleteImage = () => {
@@ -100,10 +188,10 @@ const DBNewItem = () => {
       await addNewProduct(data);
       setIsSubmitting(false);
 
-      // Immediately clear all card fields (name, price, category, image)
+      // Immediately clear form fields
       resetForm();
 
-      dispatch(alertSuccess("New item added to menu"));
+      dispatch(alertSuccess("New item added to menu!"));
       setTimeout(() => {
         dispatch(alertNULL());
       }, 3000);
@@ -111,6 +199,9 @@ const DBNewItem = () => {
       const allData = await getAllProducts();
       if (allData) {
         dispatch(setAllProducts(allData));
+        try {
+          localStorage.setItem("cached_products", JSON.stringify(allData));
+        } catch (e) {}
       }
     } catch (err) {
       setIsSubmitting(false);
@@ -120,7 +211,7 @@ const DBNewItem = () => {
   };
 
   return (
-    <div className="flex items-center justify-center flex-col pt-6 px-12 md:px-24 w-full">
+    <div className="flex items-center justify-center flex-col pt-6 px-6 md:px-24 w-full">
       <div className="border border-gray-300 rounded-md p-6 w-full flex flex-col items-center justify-center gap-4 bg-white/50 backdrop-blur-md shadow-sm">
         <InputValueField
           type="text"
@@ -129,22 +220,61 @@ const DBNewItem = () => {
           stateValue={itemName}
         />
 
-        {/* Categories Selector */}
-        <div className="w-full flex items-center justify-around gap-3 flex-wrap">
-          {statuses &&
-            statuses.map((data) => (
+        {/* Categories Selector with + Create Category */}
+        <div className="w-full flex items-center justify-start gap-3 flex-wrap py-2">
+          {categoriesList &&
+            categoriesList.map((data) => (
               <p
                 key={data.id}
                 onClick={() => setCategory(data.category)}
-                className={`px-4 py-3 rounded-md text-xl text-textColor font-semibold cursor-pointer hover:shadow-md border border-gray-200 backdrop-blur-md transition-all duration-150 ${
+                className={`px-4 py-2.5 rounded-xl text-lg font-semibold cursor-pointer hover:shadow-md border border-gray-200 backdrop-blur-md transition-all duration-150 ${
                   data.category === category
-                    ? "bg-red-500 text-white"
-                    : "bg-transparent text-textColor"
+                    ? "bg-red-500 text-white shadow-md shadow-red-200 border-red-500"
+                    : "bg-white/80 text-textColor hover:border-red-300"
                 }`}
               >
                 {data.title}
               </p>
             ))}
+
+          {/* Plus / Add Category Box */}
+          {isAddingCategory ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 border-2 border-red-400 rounded-xl bg-white shadow-md">
+              <input
+                type="text"
+                placeholder="Category name..."
+                className="outline-none text-base font-semibold text-textColor w-36 px-1"
+                value={newCatInput}
+                onChange={(e) => setNewCatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddNewCategory();
+                }}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={handleAddNewCategory}
+                className="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold transition-colors"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddingCategory(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold px-1 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div
+              onClick={() => setIsAddingCategory(true)}
+              className="px-4 py-2.5 rounded-xl text-base text-red-500 font-semibold cursor-pointer hover:shadow-md border-2 border-dashed border-red-400 hover:border-red-600 hover:bg-red-50/60 flex items-center justify-center gap-2 transition-all duration-150 bg-white/60"
+            >
+              <span className="text-xl font-bold leading-none">+</span>
+              <span>Add Category</span>
+            </div>
+          )}
         </div>
 
         <InputValueField
@@ -162,29 +292,14 @@ const DBNewItem = () => {
           stateValue={imageDownloadURL || ""}
         />
 
-        {/* Image Upload Box */}
+        {/* Fast Image Upload Box */}
         <div className="w-full bg-card backdrop-blur-md h-370 rounded-md border-2 border-dotted border-gray-300 cursor-pointer overflow-hidden relative">
           {isLoading ? (
-            <div className="w-full h-full flex flex-col items-center justify-evenly px-24">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
               <Spinner />
-              {progress && (
-                <div className="w-full flex flex-col items-center justify-center gap-2">
-                  <div className="flex justify-between w-full">
-                    <span className="text-base font-medium text-textColor">
-                      Loading...
-                    </span>
-                    <span className="text-sm font-medium text-textColor">
-                      {Math.round(progress)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-red-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                      style={{ width: `${Math.round(progress)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+              <span className="text-base font-medium text-textColor">
+                Optimizing and loading image...
+              </span>
             </div>
           ) : (
             <>
@@ -194,10 +309,12 @@ const DBNewItem = () => {
                     <p className="font-bold text-4xl text-gray-500">
                       <FaCloudUploadAlt />
                     </p>
-                    <p className="text-lg text-textColor mt-2">
+                    <p className="text-lg text-textColor mt-2 font-medium">
                       Click to upload an image from your computer
                     </p>
-                    <p className="text-sm text-gray-400">PNG, JPG, WEBP (Max 5MB)</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Instant auto-optimization (PNG, JPG, WEBP)
+                    </p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -209,9 +326,9 @@ const DBNewItem = () => {
                   />
                 </label>
               ) : (
-                <div className="relative w-full h-full overflow-hidden rounded-md">
+                <div className="relative w-full h-full overflow-hidden rounded-md flex items-center justify-center">
                   <motion.img
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.02 }}
                     src={imageDownloadURL}
                     className="w-full h-full object-contain"
                     alt="Preview"
@@ -220,7 +337,7 @@ const DBNewItem = () => {
                   <motion.button
                     {...buttonClick}
                     type="button"
-                    className="absolute top-3 right-3 p-3 rounded-full bg-red-500 text-white text-xl cursor-pointer outline-none hover:shadow-md duration-200 transition-all"
+                    className="absolute top-3 right-3 p-3 rounded-full bg-red-500 text-white text-xl cursor-pointer outline-none hover:shadow-md duration-200 transition-all shadow-md"
                     onClick={deleteImage}
                   >
                     <MdDelete />
@@ -258,7 +375,7 @@ export const InputValueField = ({
     <input
       type={type}
       placeholder={placeHolder}
-      className="w-full px-4 py-3 bg-lightOverlay shadow-sm outline-none rounded-md border border-gray-200 focus:border-red-400 text-textColor"
+      className="w-full px-4 py-3 bg-lightOverlay shadow-sm outline-none rounded-md border border-gray-200 focus:border-red-400 text-textColor transition-colors"
       value={stateValue !== null && stateValue !== undefined ? stateValue : ""}
       onChange={(e) => stateFunc(e.target.value)}
     />

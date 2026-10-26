@@ -42,13 +42,15 @@ const DBHome = () => {
     }
   }, [products, orders, dispatch]);
 
-  const totalOrders = orders?.length || 0;
+  const confirmedOrders =
+    orders?.filter((item) => item.status !== "pending_payment") || [];
+  const totalOrders = confirmedOrders.length;
   const preparing =
-    orders?.filter((item) => item.sts === "preparing")?.length || 0;
+    confirmedOrders.filter((item) => item.sts === "preparing")?.length || 0;
   const delivered =
-    orders?.filter((item) => item.sts === "delivered")?.length || 0;
+    confirmedOrders.filter((item) => item.sts === "delivered")?.length || 0;
   const cancelled =
-    orders?.filter((item) => item.sts === "cancelled")?.length || 0;
+    confirmedOrders.filter((item) => item.sts === "cancelled")?.length || 0;
 
   return (
     <div className="flex items-center justify-center flex-col pt-6 w-full h-full">

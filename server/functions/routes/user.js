@@ -3,6 +3,11 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { User } = require("../models");
 
+const getAdminEmails = () => {
+  const envAdmin = process.env.ADMIN_EMAIL || "immortalproject01@gmail.com";
+  return [envAdmin.toLowerCase(), "immortalproject01@gmail.com"];
+};
+
 // 1. JWT VERIFICATION (Validates token and returns user profile)
 router.get("/jwtVerification", async (req, res) => {
   if (!req.headers.authorization) {
@@ -25,6 +30,10 @@ router.get("/jwtVerification", async (req, res) => {
     const user = await User.findOne({ user_id: decodedValue.user_id }).select(
       "-password"
     );
+    if (user && getAdminEmails().includes(user.email.toLowerCase()) && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
+    }
     const userData = user ? user.toObject() : decodedValue;
 
     return res.status(200).json({ success: true, data: userData });
@@ -59,6 +68,7 @@ router.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user_id = Date.now().toString();
+    const isAdmin = getAdminEmails().includes(email.toLowerCase());
     const newUser = await User.create({
       user_id,
       name,
@@ -67,7 +77,7 @@ router.post("/signup", async (req, res) => {
       picture:
         picture || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       email_verified: true,
-      role: email.toLowerCase().includes("admin") ? "admin" : "user",
+      role: isAdmin ? "admin" : "user",
     });
 
     const token = jwt.sign(
@@ -119,6 +129,11 @@ router.post("/login", async (req, res) => {
       return res
         .status(400)
         .json({ success: false, msg: "Invalid password credentials" });
+    }
+
+    if (getAdminEmails().includes(user.email.toLowerCase()) && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
     }
 
     const token = jwt.sign(
@@ -177,6 +192,7 @@ router.post("/google-login", async (req, res) => {
       return res.status(400).json({ success: false, msg: "Email is required" });
     }
 
+    const isAdmin = getAdminEmails().includes(email.toLowerCase());
     let user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       user = await User.create({
@@ -186,8 +202,11 @@ router.post("/google-login", async (req, res) => {
         picture:
           picture || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
         email_verified: true,
-        role: "user",
+        role: isAdmin ? "admin" : "user",
       });
+    } else if (isAdmin && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
     }
 
     const token = jwt.sign(

@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buttonClick, slideIn, staggerFadeInOut } from "../animations";
-
 import {
   BiChevronsRight,
   FcClearFilters,
@@ -15,7 +14,6 @@ import {
   decreaseItemQuantity,
   getAllCartItems,
   increaseItemQuantity,
-  placeOrder,
 } from "../api";
 import { setCartItems } from "../context/actions/cartActions";
 import {
@@ -48,9 +46,9 @@ const Cart = () => {
     dispatch(setCartItems([]));
   };
 
-  const handleDirectOrder = async () => {
+  const handleCheckOut = async () => {
     if (!user) {
-      dispatch(alertWarning("Please sign in to place an order"));
+      dispatch(alertWarning("Please sign in to proceed with payment"));
       setTimeout(() => {
         dispatch(alertNULL());
       }, 3000);
@@ -59,59 +57,34 @@ const Cart = () => {
       return;
     }
 
-    const orderData = {
-      userId: user.user_id,
-      cart: cart,
-      total: total,
-      customer: {
-        name: user.name || "Customer",
-        email: user.email || "",
-      },
-      shipping_details: {
-        name: user.name || "Customer",
-        address: {
-          line1: "Cash on Delivery Order",
-          line2: "",
-          country: "India",
-          state: "Online",
-          postal_code: "",
-        },
-      },
-    };
-
-    dispatch(alertSuccess("Placing order..."));
-    const res = await placeOrder(orderData);
-    if (res && res.success) {
-      dispatch(setCartItems([]));
-      dispatch(setCartOff());
-      dispatch(alertSuccess("Order placed successfully!"));
-      setTimeout(() => {
-        dispatch(alertNULL());
-      }, 3000);
-      navigate("/checkout-success");
-    } else {
-      dispatch(alertDanger(res?.msg || "Failed to place order"));
-      setTimeout(() => {
-        dispatch(alertNULL());
-      }, 3000);
-    }
-  };
-
-  const handleCheckOut = () => {
     const data = {
       user: user,
       cart: cart,
       total: total,
     };
-    axios
-      .post(`${baseURL}/api/products/create-checkout-session`, { data })
-      .then((res) => {
-        // console.log(res);
-        if (res.data.url) {
-          window.location.href = res.data.url;
-        }
-      })
-      .catch((err) => console.log(err));
+
+    dispatch(alertSuccess("Connecting to online payment..."));
+    try {
+      const res = await axios.post(
+        `${baseURL}/api/products/create-checkout-session`,
+        { data }
+      );
+      if (res.data && res.data.url) {
+        window.location.href = res.data.url;
+      } else {
+        dispatch(
+          alertWarning(
+            "Payment session could not be created. Please verify Stripe credentials."
+          )
+        );
+        setTimeout(() => dispatch(alertNULL()), 3500);
+      }
+    } catch (err) {
+      dispatch(
+        alertDanger(err.response?.data?.msg || "Failed to initialize payment")
+      );
+      setTimeout(() => dispatch(alertNULL()), 3500);
+    }
   };
 
   return (
@@ -146,7 +119,7 @@ const Cart = () => {
                   <CartItemCard key={i} index={i} data={item} />
                 ))}
             </div>
-            <div className="bg-zinc-800 rounded-t-[50px] w-full h-[26%] flex flex-col items-center justify-center px-4 py-4 gap-2">
+            <div className="bg-zinc-800 rounded-t-[50px] w-full h-[26%] flex flex-col items-center justify-center px-4 py-4 gap-4">
               <div className="w-full flex items-center justify-evenly">
                 <p className="text-2xl text-zinc-400 font-semibold">Total</p>
                 <p className="text-3xl text-orange-500 font-semibold flex items-center justify-center gap-1">
@@ -156,17 +129,10 @@ const Cart = () => {
               </div>
               <motion.div
                 {...buttonClick}
-                className="bg-orange-500 w-[80%] py-2.5 text-lg text-white font-semibold hover:bg-orange-600 drop-shadow-md rounded-2xl cursor-pointer text-center"
-                onClick={handleDirectOrder}
-              >
-                Place Order (COD)
-              </motion.div>
-              <motion.div
-                {...buttonClick}
-                className="bg-zinc-700 w-[80%] py-1.5 text-xs text-gray-300 font-medium hover:bg-zinc-600 drop-shadow-md rounded-xl cursor-pointer text-center"
+                className="bg-orange-500 hover:bg-orange-600 w-[85%] py-3 text-xl text-white font-semibold drop-shadow-md rounded-2xl cursor-pointer text-center transition-all duration-150 shadow-lg"
                 onClick={handleCheckOut}
               >
-                Pay Online (Card)
+                Pay Online
               </motion.div>
             </div>
           </>
@@ -180,33 +146,32 @@ const Cart = () => {
     </motion.div>
   );
 };
+
 export const CartItemCard = ({ index, data }) => {
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
-  const cart = useSelector((state) => state.cart);
   const [itemTotal, setItemTotal] = useState(0);
+
   const decrementCart = (productId) => {
-    dispatch(alertSuccess("Updated the cartitem"));
-    decreaseItemQuantity(user?.user_id, productId, "decrement").then((data) => {
+    decreaseItemQuantity(user?.user_id, productId, "decrement").then(() => {
       getAllCartItems(user?.user_id).then((items) => {
-        dispatch(setCartItems(items));
-        dispatch(alertNULL());
+        if (items) dispatch(setCartItems(items));
       });
     });
   };
+
   const incrementCart = (productId) => {
-    dispatch(alertSuccess("Updated the cartitem"));
-    increaseItemQuantity(user?.user_id, productId, "increment").then((data) => {
+    increaseItemQuantity(user?.user_id, productId, "increment").then(() => {
       getAllCartItems(user?.user_id).then((items) => {
-        dispatch(setCartItems(items));
-        dispatch(alertNULL());
+        if (items) dispatch(setCartItems(items));
       });
     });
   };
 
   useEffect(() => {
-    setItemTotal(data.product_price * data.quantity);
-  }, [itemTotal, cart]);
+    setItemTotal((Number(data?.product_price) || 0) * (data?.quantity || 1));
+  }, [data?.product_price, data?.quantity]);
+
   return (
     <motion.div
       key={index}
@@ -214,21 +179,27 @@ export const CartItemCard = ({ index, data }) => {
       className="w-full flex items-center justify-start bg-zinc-800 rounded-md drop-shadow-md px-4 gap-4"
     >
       <img
-        src={data?.imageURL || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"}
+        src={
+          data?.imageURL ||
+          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"
+        }
         onError={(e) => {
-          e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+          e.target.src =
+            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
         }}
         className="w-24 min-w-[94px] h-24 object-contain"
         alt=""
       />
 
       <div className="flex items-center justify-start gap-1 w-full">
-        <p className='"text-lg text-primary font-semibold'>
-          {data?.product_name}
+        <div>
+          <p className="text-lg text-primary font-semibold">
+            {data?.product_name}
+          </p>
           <span className="text-sm block capitalize text-gray-400">
             {data?.product_category}
           </span>
-        </p>
+        </div>
         <p className="text-sm flex items-center justify-center gap-1 font-semibold text-red-400 ml-auto">
           <HiCurrencyRupee className="text-red-400" />
           {itemTotal}

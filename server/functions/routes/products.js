@@ -263,28 +263,68 @@ router.post("/create-order", async (req, res) => {
 // 8. CREATE STRIPE CHECKOUT SESSION
 router.post("/create-checkout-session", async (req, res) => {
   try {
+    const { user, cart, total } = req.body.data;
+    const userId = String(user?.user_id || "");
+    const orderId = Date.now().toString();
+
+    if (!cart || cart.length === 0) {
+      return res.status(400).send({ success: false, msg: "Cart is empty" });
+    }
+
+    // Clean up any previous uncompleted/unpaid checkout drafts for this user
+    await Order.deleteMany({ userId, status: "pending_payment" });
+
+    // Pre-create the Order document in MongoDB so full items, names, prices,
+    // and imageURLs are safely stored with zero character limitations.
+    const newOrder = await Order.create({
+      orderId,
+      userId,
+      items: cart,
+      total: Number(total),
+      sts: "preparing",
+      status: "pending_payment",
+      customer: {
+        email: user?.email || "",
+        name: user?.name || "Customer",
+      },
+      shipping_details: {
+        name: user?.name || "Customer",
+      },
+      intentId: "",
+    });
+
+    // In Stripe customer metadata, store ONLY lightweight identifiers (<50 chars, Stripe limit is 500)
     const customer = await stripe.customers.create({
       metadata: {
-        user_id: req.body.data.user.user_id,
-        cart: JSON.stringify(req.body.data.cart),
-        total: req.body.data.total,
+        user_id: userId.slice(0, 500),
+        order_id: String(orderId),
+        total: String(total),
       },
     });
 
-    const line_items = req.body.data.cart.map((item) => {
+    // Safely format line items for Stripe:
+    // Only pass images if it is a valid HTTP/HTTPS URL (Stripe rejects data: URIs)
+    const line_items = cart.map((item) => {
+      const validImages =
+        item.imageURL &&
+        typeof item.imageURL === "string" &&
+        (item.imageURL.startsWith("http://") || item.imageURL.startsWith("https://"))
+          ? [item.imageURL]
+          : [];
+
       return {
         price_data: {
           currency: "inr",
           product_data: {
-            name: item.product_name,
-            images: [item.imageURL],
+            name: String(item.product_name || "Food Item"),
+            images: validImages,
             metadata: {
-              id: item.productId,
+              id: String(item.productId || ""),
             },
           },
           unit_amount: Math.round(Number(item.product_price) * 100),
         },
-        quantity: item.quantity,
+        quantity: Number(item.quantity) || 1,
       };
     });
 
@@ -309,14 +349,52 @@ router.post("/create-checkout-session", async (req, res) => {
       },
       line_items,
       customer: customer.id,
+      metadata: {
+        order_id: String(orderId),
+        user_id: userId,
+      },
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/checkout-success`,
-      cancel_url: `${process.env.CLIENT_URL}/`,
+      success_url: `${process.env.CLIENT_URL}/checkout-success?order_id=${orderId}`,
+      cancel_url: `${process.env.CLIENT_URL}/?cancelled_order=${orderId}`,
     });
+
+    newOrder.intentId = session.id;
+    await newOrder.save();
 
     res.send({ url: session.url });
   } catch (err) {
+    console.error("Stripe Checkout Error:", err);
     res.status(500).send({ success: false, msg: `Stripe Error: ${err.message}` });
+  }
+});
+
+// CONFIRM ORDER UPON RETURNING FROM STRIPE (for local dev / immediate sync)
+router.post("/confirm-order/:order_id", async (req, res) => {
+  try {
+    const orderId = req.params.order_id;
+    const order = await Order.findOne({ orderId });
+    if (order) {
+      order.status = "paid";
+      await order.save();
+      if (order.userId) {
+        await Cart.findOneAndUpdate({ userId: order.userId }, { items: [] });
+      }
+      return res.status(200).json({ success: true, data: order });
+    }
+    return res.status(404).json({ success: false, msg: "Order not found" });
+  } catch (err) {
+    return res.status(500).json({ success: false, msg: `Error: ${err.message}` });
+  }
+});
+
+// CANCEL UNPAID ORDER DRAFT
+router.post("/cancel-order/:order_id", async (req, res) => {
+  try {
+    const orderId = req.params.order_id;
+    await Order.deleteOne({ orderId, status: "pending_payment" });
+    return res.status(200).json({ success: true, msg: "Pending draft removed" });
+  } catch (err) {
+    return res.status(500).json({ success: false, msg: `Error: ${err.message}` });
   }
 });
 
@@ -360,26 +438,44 @@ router.post(
 
 const createOrder = async (customer, intent, res) => {
   try {
-    const orderId = Date.now().toString();
-    const orderData = {
-      intentId: intent.id || "",
-      orderId: orderId,
-      amount: intent.amount_total,
-      payment_method_types: intent.payment_method_types,
-      status: intent.payment_status || "paid",
-      customer: intent.customer_details || {},
-      shipping_details: intent.shipping_details || {},
-      userId: customer.metadata.user_id,
-      items: JSON.parse(customer.metadata.cart || "[]"),
-      total: customer.metadata.total,
-      sts: "preparing",
-    };
+    const orderId =
+      customer?.metadata?.order_id || intent?.metadata?.order_id;
+    const userId =
+      customer?.metadata?.user_id || intent?.metadata?.user_id;
 
-    await Order.create(orderData);
-    await Cart.findOneAndUpdate(
-      { userId: customer.metadata.user_id },
-      { items: [] }
-    );
+    if (orderId) {
+      const existing = await Order.findOne({ orderId });
+      if (existing) {
+        existing.status = "paid";
+        existing.intentId = intent.id || intent.payment_intent || existing.intentId;
+        if (intent.customer_details) existing.customer = intent.customer_details;
+        if (intent.shipping_details) existing.shipping_details = intent.shipping_details;
+        await existing.save();
+      }
+    } else {
+      const legacyOrderId = Date.now().toString();
+      let items = [];
+      try {
+        items = customer?.metadata?.cart ? JSON.parse(customer.metadata.cart) : [];
+      } catch (e) {}
+      await Order.create({
+        intentId: intent.id || "",
+        orderId: legacyOrderId,
+        amount: intent.amount_total,
+        payment_method_types: intent.payment_method_types,
+        status: intent.payment_status || "paid",
+        customer: intent.customer_details || {},
+        shipping_details: intent.shipping_details || {},
+        userId: userId,
+        items: items,
+        total: customer?.metadata?.total || 0,
+        sts: "preparing",
+      });
+    }
+
+    if (userId) {
+      await Cart.findOneAndUpdate({ userId }, { items: [] });
+    }
     if (res && !res.headersSent) {
       return res.status(200).send({ success: true });
     }
@@ -388,10 +484,12 @@ const createOrder = async (customer, intent, res) => {
   }
 };
 
-// 9. GET ALL ORDERS
+// 9. GET ALL CONFIRMED ORDERS (Excludes uncompleted pending checkout sessions)
 router.get("/orders", async (req, res) => {
   try {
-    const orders = await Order.find({}).sort({ createdAt: -1 });
+    const orders = await Order.find({ status: { $ne: "pending_payment" } }).sort({
+      createdAt: -1,
+    });
     return res.status(200).send({ success: true, data: orders });
   } catch (err) {
     return res.send({ success: false, msg: `Error: ${err}` });
@@ -406,7 +504,7 @@ router.post("/updateOrder/:order_id", async (req, res) => {
     const updatedOrder = await Order.findOneAndUpdate(
       { orderId: order_id },
       { sts: sts },
-      { new: true }
+      { returnDocument: "after", new: true }
     );
     return res.status(200).send({ success: true, data: updatedOrder });
   } catch (er) {
