@@ -1,8 +1,9 @@
 import axios from "axios";
 
-export const baseURL =
+export const baseURL = (
   process.env.REACT_APP_API_URL ||
-  "http://localhost:5001/fullstack-food-app02/us-central1/app";
+  "http://localhost:5001/fullstack-food-app02/us-central1/app"
+).replace(/\/+$/, "");
 
 export const validateUserJWTToken = async (token) => {
   try {
