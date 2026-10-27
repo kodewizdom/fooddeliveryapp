@@ -21,7 +21,7 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const firebaseAuth = getAuth(app);
+  const firebaseAuth = app ? getAuth(app) : null;
   const provider = new GoogleAuthProvider();
   const user = useSelector((state) => state.user);
 
@@ -108,17 +108,19 @@ const Login = () => {
     }
 
     // 2. Fallback: Firebase popup
-    try {
-      const userCred = await signInWithPopup(firebaseAuth, provider);
-      if (userCred && userCred.user) {
-        await handleGoogleSuccess({
-          email: userCred.user.email,
-          name: userCred.user.displayName,
-          picture: userCred.user.photoURL,
-        });
+    if (firebaseAuth) {
+      try {
+        const userCred = await signInWithPopup(firebaseAuth, provider);
+        if (userCred && userCred.user) {
+          await handleGoogleSuccess({
+            email: userCred.user.email,
+            name: userCred.user.displayName,
+            picture: userCred.user.photoURL,
+          });
+        }
+      } catch (err) {
+        dispatch(alertWarning(err?.message || "Google Sign-In failed"));
       }
-    } catch (err) {
-      dispatch(alertWarning(err?.message || "Google Sign-In failed"));
     }
   };
 
