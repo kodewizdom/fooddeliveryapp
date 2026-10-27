@@ -1,10 +1,50 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Delivery, HeroBg } from "../assets";
 import { buttonClick, staggerFadeInOut } from "../animations";
 import { randomData, getOptimizedImageUrl } from "../utils/styles";
 import BackToTop from "./BackToTop";
+
+const HeroDishCard = ({ data, index }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  return (
+    <motion.div
+      {...staggerFadeInOut(index)}
+      className="w-36 sm:w-44 p-4 bg-white/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-lg border border-gray-100/80 hover:scale-105 transition-transform"
+    >
+      <div className="w-16 h-16 sm:w-28 sm:h-28 -mt-10 sm:-mt-14 relative flex items-center justify-center">
+        {!imageLoaded && (
+          <div className="w-full h-full bg-gradient-to-tr from-orange-100 via-gray-200 to-orange-100 animate-pulse rounded-full absolute inset-0" />
+        )}
+        <img
+          src={getOptimizedImageUrl(data.imageURL, 300)}
+          fetchpriority="high"
+          decoding="async"
+          onLoad={() => setImageLoaded(true)}
+          onError={(e) => {
+            e.target.onerror = null;
+            setImageLoaded(true);
+          }}
+          className={`w-full h-full object-contain drop-shadow-md transition-opacity duration-300 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          alt={data.product_name}
+        />
+      </div>
+      <p className="text-sm sm:text-base font-bold text-textColor mt-2 text-center truncate w-full">
+        {data.product_name}
+      </p>
+      <p className="text-xs sm:text-sm text-gray-400 font-medium capitalize text-center">
+        {data.product_category}
+      </p>
+      <p className="text-sm sm:text-base font-bold text-headingColor mt-1">
+        <span className="text-xs text-red-600">₹</span> {data.product_price}
+      </p>
+    </motion.div>
+  );
+};
 
 const Home = () => {
   return (
@@ -50,27 +90,7 @@ const Home = () => {
         <div className="w-full max-w-[480px] flex flex-wrap items-center justify-center gap-4 gap-y-12 sm:gap-y-16 z-10 py-6">
           {randomData &&
             randomData.map((data, i) => (
-              <motion.div
-                key={i}
-                {...staggerFadeInOut(i)}
-                className="w-36 sm:w-44 p-4 bg-white/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-lg border border-gray-100/80 hover:scale-105 transition-transform"
-              >
-                <img
-                  src={getOptimizedImageUrl(data.imageURL, 300)}
-                  decoding="async"
-                  className="w-16 h-16 sm:w-28 sm:h-28 -mt-10 sm:-mt-14 object-contain drop-shadow-md"
-                  alt={data.product_name}
-                />
-                <p className="text-sm sm:text-base font-bold text-textColor mt-2 text-center truncate w-full">
-                  {data.product_name}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-400 font-medium capitalize text-center">
-                  {data.product_category}
-                </p>
-                <p className="text-sm sm:text-base font-bold text-headingColor mt-1">
-                  <span className="text-xs text-red-600">₹</span> {data.product_price}
-                </p>
-              </motion.div>
+              <HeroDishCard key={data.id || i} data={data} index={i} />
             ))}
         </div>
       </div>

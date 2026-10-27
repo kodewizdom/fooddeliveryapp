@@ -10,15 +10,16 @@ import { getOptimizedImageUrl } from '../utils/styles';
 
 export const CardSkeleton = () => {
     return (
-        <div className='bg-white rounded-2xl flex flex-col sm:flex-row items-center justify-between p-2.5 sm:p-4 w-full gap-2 sm:gap-3 border border-gray-100 shadow-sm animate-pulse'>
-            <div className='w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] sm:min-w-[96px] bg-gray-200/80 rounded-xl flex items-center justify-center'>
-                <div className='w-8 h-8 rounded-full bg-gray-300/60'></div>
+        <div className='bg-white rounded-2xl flex flex-col sm:flex-row items-center justify-between p-2.5 sm:p-4 w-full gap-2 sm:gap-3 border border-gray-100 shadow-sm'>
+            <div className='w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] sm:min-w-[96px] bg-gradient-to-tr from-orange-100/60 via-gray-200/70 to-orange-100/60 rounded-xl flex items-center justify-center animate-pulse'>
+                <div className='w-8 h-8 rounded-full bg-gray-300/50'></div>
             </div>
-            <div className='flex-1 flex flex-col justify-between self-stretch py-1 min-w-0 w-full'>
-                <div className='h-3 sm:h-4 bg-gray-200/80 rounded-md w-3/4 mx-auto sm:mx-0'></div>
+            <div className='flex-1 flex flex-col justify-between self-stretch py-1 min-w-0 w-full gap-2'>
+                <div className='h-3.5 sm:h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-md w-3/4 mx-auto sm:mx-0 animate-pulse'></div>
+                <div className='h-3 bg-gray-100 rounded-md w-1/2 mx-auto sm:mx-0 hidden sm:block animate-pulse'></div>
                 <div className='flex items-center justify-between w-full mt-2'>
-                    <div className='h-3 sm:h-4 bg-gray-200/80 rounded-md w-1/3'></div>
-                    <div className='w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-300/80'></div>
+                    <div className='h-3.5 sm:h-4 bg-gray-200 rounded-md w-1/3 animate-pulse'></div>
+                    <div className='w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-orange-100/80 animate-pulse'></div>
                 </div>
             </div>
         </div>
@@ -74,11 +75,12 @@ const SliderCard = ({ data, index }) => {
         <div className='bg-white hover:shadow-xl rounded-2xl flex flex-col sm:flex-row items-center justify-between relative p-2.5 sm:p-4 w-full gap-2 sm:gap-3 border border-gray-100 shadow-sm hover:border-orange-100 transition-all duration-200'>
             <div className='w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] sm:min-w-[96px] relative flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden shrink-0'>
                 {!imageLoaded && (
-                    <div className='w-full h-full bg-gray-200/70 animate-pulse rounded-xl absolute inset-0' />
+                    <div className='w-full h-full bg-gradient-to-tr from-orange-100/70 via-gray-200/80 to-orange-100/70 animate-pulse rounded-xl absolute inset-0' />
                 )}
                 <img
-                    src={getOptimizedImageUrl(data?.imageURL, 400)}
-                    loading="lazy"
+                    src={getOptimizedImageUrl(data?.imageURL, 280)}
+                    loading={index !== undefined && index < 8 ? "eager" : "lazy"}
+                    fetchpriority={index !== undefined && index < 4 ? "high" : "auto"}
                     decoding="async"
                     onLoad={() => setImageLoaded(true)}
                     onError={(e) => {

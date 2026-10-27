@@ -3,6 +3,7 @@ import { Cart, FilterSection, Header, Home, HomeSLider, Footer } from '../compon
 import { useDispatch, useSelector } from 'react-redux';
 import { setAllProducts } from '../context/actions/productActions';
 import { getAllProducts, baseURL } from '../api';
+import defaultProducts from '../utils/defaultProducts.json';
 import axios from 'axios';
 
 const Main = () => {
@@ -21,13 +22,20 @@ const Main = () => {
       }
     } catch (e) {}
 
-    // 1. Instant cache hydration on refresh/initial render
-    try {
-      const cached = localStorage.getItem("cached_products");
-      if (cached && !products) {
-        dispatch(setAllProducts(JSON.parse(cached)));
+    // 1. Instant 0ms hydration: Check localStorage, or fallback immediately to bundled catalog
+    if (!products) {
+      try {
+        const cached = localStorage.getItem("cached_products");
+        if (cached) {
+          dispatch(setAllProducts(JSON.parse(cached)));
+        } else {
+          // Brand new visitor! Hydrate instantly with bundled dishes so homepage loads in 0ms
+          dispatch(setAllProducts(defaultProducts));
+        }
+      } catch (e) {
+        dispatch(setAllProducts(defaultProducts));
       }
-    } catch (e) {}
+    }
 
     // 2. Fetch fresh products from MongoDB
     getAllProducts().then((data) => {

@@ -17,6 +17,8 @@ import {
   Profile,
 } from "./components";
 import { setCartItems } from "./context/actions/cartActions";
+import { setAllProducts } from "./context/actions/productActions";
+import defaultProducts from "./utils/defaultProducts.json";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +32,18 @@ const App = () => {
     const safetyTimer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
+
+    // 0. Instant product catalog hydration (0ms first paint)
+    try {
+      const cachedProducts = localStorage.getItem("cached_products");
+      if (cachedProducts) {
+        dispatch(setAllProducts(JSON.parse(cachedProducts)));
+      } else {
+        dispatch(setAllProducts(defaultProducts));
+      }
+    } catch (e) {
+      dispatch(setAllProducts(defaultProducts));
+    }
 
     // 1. Instant user hydration from localStorage (never logs out on refresh or back button)
     try {

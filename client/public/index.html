@@ -15,16 +15,20 @@
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-  <title>React App</title>
+  <!-- Preconnect and DNS Prefetch for Cloudinary CDN & Render Backend -->
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+  <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+  <link rel="preconnect" href="https://city-food-api.onrender.com" crossorigin />
+  <link rel="dns-prefetch" href="https://city-food-api.onrender.com" />
+
+  <!-- Preload critical above-the-fold Hero Dish Images -->
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dtpzcv8v/image/upload/f_auto,q_auto,w_300,c_limit/v1793019184/Icecreame1.png" fetchpriority="high" />
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dtpzcv8v/image/upload/f_auto,q_auto,w_300,c_limit/v1793019181/Fruit1.png" fetchpriority="high" />
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dtpzcv8v/image/upload/f_auto,q_auto,w_300,c_limit/v1793019176/Burger1.png" fetchpriority="high" />
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dtpzcv8v/image/upload/f_auto,q_auto,w_300,c_limit/v1793019188/Pizza1.png" fetchpriority="high" />
+
+  <title>City Food Express - Fast & Fresh Food Delivery</title>
 </head>
 
 <body>

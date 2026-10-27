@@ -6,6 +6,7 @@ import SliderCard, { CardSkeleton } from "./SliderCard";
 import { statuses } from "../utils/styles";
 import { getAllProducts } from "../api";
 import { setAllProducts } from "../context/actions/productActions";
+import defaultProducts from "../utils/defaultProducts.json";
 import { MdSearch, MdClear } from "react-icons/md";
 import { IoRestaurantOutline } from "react-icons/io5";
 
@@ -28,12 +29,18 @@ const Menu = () => {
 
   // Ensure products are hydrated on direct navigation to /menu
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem("cached_products");
-      if (cached && !products) {
-        dispatch(setAllProducts(JSON.parse(cached)));
+    if (!products) {
+      try {
+        const cached = localStorage.getItem("cached_products");
+        if (cached) {
+          dispatch(setAllProducts(JSON.parse(cached)));
+        } else {
+          dispatch(setAllProducts(defaultProducts));
+        }
+      } catch (e) {
+        dispatch(setAllProducts(defaultProducts));
       }
-    } catch (e) {}
+    }
 
     getAllProducts().then((data) => {
       if (data) {
