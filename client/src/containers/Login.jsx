@@ -48,6 +48,7 @@ const Login = () => {
       const res = await userGoogleLogin({ email, name, picture });
       if (res && res.success && res.token) {
         localStorage.setItem("token", res.token);
+        localStorage.setItem("cached_user", JSON.stringify(res.data));
         dispatch(setUserDetails(res.data));
         navigate("/", { replace: true });
       } else {
@@ -137,6 +138,7 @@ const Login = () => {
     const res = await userSignUp({ email: userEmail, password });
     if (res && res.success && res.token) {
       localStorage.setItem("token", res.token);
+      localStorage.setItem("cached_user", JSON.stringify(res.data));
       dispatch(setUserDetails(res.data));
       setUserEmail("");
       setPassword("");
@@ -156,6 +158,7 @@ const Login = () => {
     const res = await userLogin({ email: userEmail, password });
     if (res && res.success && res.token) {
       localStorage.setItem("token", res.token);
+      localStorage.setItem("cached_user", JSON.stringify(res.data));
       dispatch(setUserDetails(res.data));
       setUserEmail("");
       setPassword("");

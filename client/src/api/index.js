@@ -1,15 +1,22 @@
 import axios from "axios";
 
+const isLocalhost =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
+
 export const baseURL = (
   process.env.REACT_APP_API_URL ||
-  "http://localhost:5001/fullstack-food-app02/us-central1/app"
+  (isLocalhost
+    ? "http://localhost:5001/fullstack-food-app02/us-central1/app"
+    : "https://city-food-api.onrender.com")
 ).replace(/\/+$/, "");
 
 export const validateUserJWTToken = async (token) => {
   try {
     const res = await axios.get(`${baseURL}/api/users/jwtVerification`, {
       headers: { Authorization: "Bearer " + token },
-      timeout: 3000,
+      timeout: 15000,
     });
     return res.data.data;
   } catch (err) {

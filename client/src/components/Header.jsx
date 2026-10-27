@@ -38,6 +38,7 @@ const Header = () => {
     setIsMenu(false);
     setIsMobileNav(false);
     localStorage.removeItem("token");
+    localStorage.removeItem("cached_user");
     dispatch(setUserNull());
     navigate("/login", { replace: true });
   };

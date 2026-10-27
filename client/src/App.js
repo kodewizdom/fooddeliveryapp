@@ -31,11 +31,20 @@ const App = () => {
       setIsLoading(false);
     }, 1000);
 
+    // 1. Instant user hydration from localStorage (never logs out on refresh or back button)
+    try {
+      const cached = localStorage.getItem("cached_user");
+      if (cached) {
+        dispatch(setUserDetails(JSON.parse(cached)));
+      }
+    } catch (e) {}
+
     const token = localStorage.getItem("token");
     if (token) {
       validateUserJWTToken(token)
         .then((data) => {
           if (data) {
+            localStorage.setItem("cached_user", JSON.stringify(data));
             getAllCartItems(data.user_id).then((items) => {
               if (items) dispatch(setCartItems(items));
             });
