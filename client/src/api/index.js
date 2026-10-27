@@ -1,6 +1,7 @@
 import axios from "axios";
 
 export const baseURL =
+  process.env.REACT_APP_API_URL ||
   "http://localhost:5001/fullstack-food-app02/us-central1/app";
 
 export const validateUserJWTToken = async (token) => {
@@ -74,6 +75,18 @@ export const deleteAProduct = async (productId) => {
       `${baseURL}/api/products/delete/${productId}`
     );
     return res.data.data;
+  } catch (err) {
+    return null;
+  }
+};
+
+// delete all products in a category
+export const deleteCategoryAndProducts = async (categoryName) => {
+  try {
+    const res = await axios.delete(
+      `${baseURL}/api/products/deleteCategory/${encodeURIComponent(categoryName)}`
+    );
+    return res.data;
   } catch (err) {
     return null;
   }

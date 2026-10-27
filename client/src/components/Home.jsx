@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Delivery, HeroBg } from "../assets";
 import { buttonClick, staggerFadeInOut } from "../animations";
-import { randomData } from "../utils/styles";
+import { randomData, getOptimizedImageUrl } from "../utils/styles";
 import BackToTop from "./BackToTop";
 
 const Home = () => {
@@ -56,7 +56,8 @@ const Home = () => {
                 className="w-36 sm:w-44 p-4 bg-white/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-lg border border-gray-100/80 hover:scale-105 transition-transform"
               >
                 <img
-                  src={data.imageURL}
+                  src={getOptimizedImageUrl(data.imageURL, 300)}
+                  decoding="async"
                   className="w-16 h-16 sm:w-28 sm:h-28 -mt-10 sm:-mt-14 object-contain drop-shadow-md"
                   alt={data.product_name}
                 />

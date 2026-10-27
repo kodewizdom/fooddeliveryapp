@@ -23,6 +23,7 @@ import {
 } from "../context/actions/alertAction";
 import axios from "axios";
 import { EmptyCart } from "../assets";
+import { getOptimizedImageUrl } from "../utils/styles";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -202,12 +203,14 @@ export const CartItemCard = ({ index, data }) => {
     >
       <img
         src={
-          data?.imageURL ||
-          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"
+          getOptimizedImageUrl(data?.imageURL, 200) ||
+          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60"
         }
+        loading="lazy"
+        decoding="async"
         onError={(e) => {
           e.target.src =
-            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60";
         }}
         className="w-24 min-w-[94px] h-24 object-contain"
         alt=""

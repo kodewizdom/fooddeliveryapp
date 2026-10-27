@@ -5,6 +5,7 @@ import { HiCurrencyRupee } from '../assets/icons';
 import { updateOrderSts } from '../api';
 import { setOrders } from '../context/actions/orderAction';
 import { useDispatch, useSelector } from 'react-redux';
+import { getOptimizedImageUrl } from '../utils/styles';
 
 const OrderData = ({ index, data, admin }) => {
     const dispatch = useDispatch();
@@ -117,12 +118,14 @@ const OrderData = ({ index, data, admin }) => {
                             >
                                 <img
                                     src={
-                                        item?.imageURL ||
-                                        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"
+                                        getOptimizedImageUrl(item?.imageURL, 150) ||
+                                        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&auto=format&fit=crop&q=60"
                                     }
+                                    loading="lazy"
+                                    decoding="async"
                                     onError={(e) => {
                                         e.target.src =
-                                            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+                                            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&auto=format&fit=crop&q=60";
                                     }}
                                     className='w-10 h-10 object-contain'
                                     alt=""

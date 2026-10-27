@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setAllProducts } from "../context/actions/productActions";
 import { deleteAProduct, getAllProducts } from "../api";
 import { alertNULL, alertSuccess } from "../context/actions/alertAction";
+import { getOptimizedImageUrl } from "../utils/styles";
 
 const DBItems = () => {
   const products = useSelector((state) => state.products);
@@ -28,12 +29,14 @@ const DBItems = () => {
             render: (rowData) => (
               <img
                 src={
-                  rowData?.imageURL ||
-                  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60"
+                  getOptimizedImageUrl(rowData?.imageURL, 200) ||
+                  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60"
                 }
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   e.target.src =
-                    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=60";
+                    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60";
                 }}
                 className="w-32 h-16 object-contain rounded-md"
                 alt={rowData?.product_name || "Food"}

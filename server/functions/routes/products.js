@@ -3,87 +3,6 @@ const express = require("express");
 const { Product, Cart, Order } = require("../models");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 
-// Initial starter food items to auto-populate MongoDB if empty
-const starterProducts = [
-  {
-    productId: "1001",
-    product_name: "Fresh Strawberries",
-    product_category: "fruits",
-    product_price: "120.00",
-    imageURL: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1002",
-    product_name: "Sweet Pineapples",
-    product_category: "fruits",
-    product_price: "90.00",
-    imageURL: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1003",
-    product_name: "Chocolate Ice Cream",
-    product_category: "deserts",
-    product_price: "85.00",
-    imageURL: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1004",
-    product_name: "Fresh Mint Mojito",
-    product_category: "drinks",
-    product_price: "110.00",
-    imageURL: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1005",
-    product_name: "Classic Cheese Burger",
-    product_category: "burger",
-    product_price: "140.00",
-    imageURL: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1006",
-    product_name: "Italian Pepperoni Pizza",
-    product_category: "pizza",
-    product_price: "260.00",
-    imageURL: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1007",
-    product_name: "Hyderabadi Chicken Biryani",
-    product_category: "biryani",
-    product_price: "220.00",
-    imageURL: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1008",
-    product_name: "Grilled Chicken Kebab",
-    product_category: "chicken",
-    product_price: "180.00",
-    imageURL: "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1009",
-    product_name: "Hakka Noodles",
-    product_category: "chinese",
-    product_price: "130.00",
-    imageURL: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1010",
-    product_name: "Paneer Butter Masala",
-    product_category: "curry",
-    product_price: "190.00",
-    imageURL: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    productId: "1011",
-    product_name: "Jeera Fried Rice",
-    product_category: "rice",
-    product_price: "110.00",
-    imageURL: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&auto=format&fit=crop&q=80",
-  },
-];
-
 // High-performance in-memory cache for products
 let productsCache = null;
 let lastFetchTime = 0;
@@ -119,11 +38,6 @@ router.get("/all", async (req, res) => {
 
     let products = await Product.find({}).sort({ createdAt: -1 });
 
-    if (products.length === 0) {
-      await Product.insertMany(starterProducts);
-      products = await Product.find({}).sort({ createdAt: -1 });
-    }
-
     productsCache = products;
     lastFetchTime = now;
     return res.status(200).send({ success: true, data: products });
@@ -142,6 +56,22 @@ router.delete("/delete/:productId", async (req, res) => {
     const result = await Product.findOneAndDelete({ productId });
     productsCache = null; // Invalidate cache on deletion
     return res.status(200).send({ success: true, data: result });
+  } catch (err) {
+    return res.send({ success: false, msg: `Error: ${err}` });
+  }
+});
+
+// 3.1 DELETE ALL PRODUCTS OF A CATEGORY
+router.delete("/deleteCategory/:categoryName", async (req, res) => {
+  const categoryName = req.params.categoryName.toLowerCase().trim();
+  try {
+    const result = await Product.deleteMany({ product_category: categoryName });
+    productsCache = null; // Invalidate cache on category deletion
+    return res.status(200).send({
+      success: true,
+      message: `Deleted ${result.deletedCount} products from category '${categoryName}'`,
+      deletedCount: result.deletedCount,
+    });
   } catch (err) {
     return res.send({ success: false, msg: `Error: ${err}` });
   }

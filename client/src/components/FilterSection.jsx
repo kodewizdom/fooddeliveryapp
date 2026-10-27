@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import React, { useState, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { homeCategories } from '../utils/styles';
 import { buttonClick, staggerFadeInOut } from '../animations';
 import { IoFastFood } from '../assets/icons';
@@ -32,6 +33,15 @@ const FilterSection = () => {
                     </p>
                     <div className='w-40 h-1 rounded-md bg-orange-500'></div>
                 </div>
+
+                {/* Desktop Menu Link (Just like the See All button in HomeSlider) */}
+                <Link
+                    to="/menu"
+                    className="hidden lg:flex text-sm sm:text-base font-semibold text-orange-600 hover:text-orange-700 hover:underline items-center gap-1"
+                >
+                    <span>Menu</span>
+                    <span className="text-lg">&rarr;</span>
+                </Link>
 
                 {/* Left and Right Navigation Buttons (Mobile & Tablet only) */}
                 <div className='flex lg:hidden items-center gap-2 sm:gap-3'>

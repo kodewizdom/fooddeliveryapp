@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addNewItemToCart } from '../api';
 import { alertNULL, alertSuccess } from '../context/actions/alertAction';
 import { setCartItems } from '../context/actions/cartActions';
+import { getOptimizedImageUrl } from '../utils/styles';
 
 export const CardSkeleton = () => {
     return (
@@ -76,7 +77,9 @@ const SliderCard = ({ data, index }) => {
                     <div className='w-full h-full bg-gray-200/70 animate-pulse rounded-xl absolute inset-0' />
                 )}
                 <img
-                    src={data?.imageURL}
+                    src={getOptimizedImageUrl(data?.imageURL, 400)}
+                    loading="lazy"
+                    decoding="async"
                     onLoad={() => setImageLoaded(true)}
                     onError={(e) => {
                         e.target.onerror = null;

@@ -9,7 +9,7 @@ export const homeCategories = [
     { id: 4, title: "Pizza", category: "pizza" },
     { id: 5, title: "Chinese", category: "chinese" },
     { id: 6, title: "Biryani", category: "biryani" },
-    { id: 7, title: "Chicken", category: "chicken" },
+    { id: 7, title: "Curry", category: "curry" },
     { id: 8, title: "Deserts", category: "deserts" },
 ];
 
@@ -20,54 +20,55 @@ export const statuses = [
     { id: 4, title: "Pizza", category: "pizza" },
     { id: 5, title: "Chinese", category: "chinese" }, 
     { id: 6, title: "Biryani", category: "biryani" },
-    { id: 7, title: "Chicken", category: "chicken" },
-    { id: 8, title: "Deserts", category: "deserts" }, 
-    { id: 9, title: "Rice", category: "rice" },
-    { id: 10, title: "Curry", category: "curry" }, 
+    { id: 7, title: "Curry", category: "curry" }, 
+    { id: 8, title: "Rice", category: "rice" },
+    { id: 9, title: "Fish", category: "fish" },
+    { id: 10, title: "Deserts", category: "deserts" }, 
     { id: 11, title: "Fruits", category: "fruits" },
+    { id: 12, title: "Chicken", category: "chicken" },
 ];
 
 export const randomData = [
     {
         id: 1,
-        imageURL: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600&auto=format&fit=crop&q=80",
-        product_name: "Ice Cream",
-        product_category: "Chocolate & Vanilla",
-        product_price: "65.00",
+        imageURL: "https://res.cloudinary.com/dtpzcv8v/image/upload/v1793019184/Icecreame1.png",
+        product_name: "Berry Bliss Swirl",
+        product_category: "Creamy Ice Cream",
+        product_price: "95.00",
     },
     {
         id: 2,
-        imageURL: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&auto=format&fit=crop&q=80",
-        product_name: "Strawberries",
-        product_category: "Fresh Strawberries",
-        product_price: "145.00",
+        imageURL: "https://res.cloudinary.com/dtpzcv8v/image/upload/v1793019181/Fruit1.png",
+        product_name: "Fresh Strawberries",
+        product_category: "Juicy Red Berries",
+        product_price: "140.00",
     },
     {
         id: 3,
-        imageURL: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=600&auto=format&fit=crop&q=80",
-        product_name: "Pine Apple",
-        product_category: "Juicy Apples",
-        product_price: "75.00",
+        imageURL: "https://res.cloudinary.com/dtpzcv8v/image/upload/v1793019176/Burger1.png",
+        product_name: "Cheese Supreme",
+        product_category: "Gourmet Burger",
+        product_price: "189.00",
     },
     {
         id: 4,
-        imageURL: "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=600&auto=format&fit=crop&q=80",
-        product_name: "Chicken Kebab",
-        product_category: "Mixed Kebab Plate",
-        product_price: "150.00",
+        imageURL: "https://res.cloudinary.com/dtpzcv8v/image/upload/v1793019188/Pizza1.png",
+        product_name: "Margherita Supreme",
+        product_category: "Classic Italian Pizza",
+        product_price: "299.00",
     },
-    {
-        id: 5,
-        imageURL: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80",
-        product_name: "Mojito",
-        product_category: "Cocktail Drinks",
-        product_price: "200.00",
-    },
-    {
-        id: 6,
-        imageURL: "https://images.unsplash.com/photo-1559847844-5315695dadae?w=600&auto=format&fit=crop&q=80",
-        product_name: "Prawn Masala",
-        product_category: "Spicy Masala",
-        product_price: "130.00",
-    },
-];    
+];
+
+// High-performance image optimization helper (WebP, auto quality, width limit)
+export const getOptimizedImageUrl = (url, width = 500) => {
+    if (!url || typeof url !== "string") return url;
+    if (url.includes("cloudinary.com") && url.includes("/upload/")) {
+        if (url.includes("/upload/f_auto,q_auto")) return url;
+        return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width},c_limit/`);
+    }
+    if (url.includes("unsplash.com")) {
+        const base = url.split("?")[0];
+        return `${base}?w=${width}&auto=format&fit=crop&q=80`;
+    }
+    return url;
+};    

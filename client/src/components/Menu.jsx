@@ -49,14 +49,21 @@ const Menu = () => {
   // Combine default categories + custom categories added in Admin Dashboard + categories from products
   const allCategories = useMemo(() => {
     const catMap = new Map();
+    const deletedCats = new Set(
+      JSON.parse(localStorage.getItem("deleted_categories") || "[]").map((c) =>
+        c.toLowerCase()
+      )
+    );
 
     // 1. Base statuses
     statuses.forEach((s) => {
-      catMap.set(s.category.toLowerCase(), {
-        id: s.id,
-        title: s.title,
-        category: s.category.toLowerCase(),
-      });
+      if (!deletedCats.has(s.category.toLowerCase())) {
+        catMap.set(s.category.toLowerCase(), {
+          id: s.id,
+          title: s.title,
+          category: s.category.toLowerCase(),
+        });
+      }
     });
 
     // 2. Custom categories created by Admin in DBNewItem
@@ -65,11 +72,12 @@ const Menu = () => {
         localStorage.getItem("custom_categories") || "[]"
       );
       savedCustom.forEach((c) => {
-        if (!catMap.has(c.category.toLowerCase())) {
-          catMap.set(c.category.toLowerCase(), {
+        const key = c.category.toLowerCase();
+        if (!deletedCats.has(key) && !catMap.has(key)) {
+          catMap.set(key, {
             id: c.id || Date.now() + Math.random(),
             title: c.title,
-            category: c.category.toLowerCase(),
+            category: key,
           });
         }
       });
@@ -80,7 +88,7 @@ const Menu = () => {
       products.forEach((p) => {
         if (p.product_category) {
           const key = p.product_category.toLowerCase();
-          if (!catMap.has(key)) {
+          if (!deletedCats.has(key) && !catMap.has(key)) {
             catMap.set(key, {
               id: Date.now() + Math.random(),
               title:

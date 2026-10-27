@@ -10,7 +10,7 @@ import {
 } from "../context/actions/alertAction";
 import { buttonClick } from "../animations";
 import { motion } from "framer-motion";
-import { addNewProduct, getAllProducts } from "../api";
+import { addNewProduct, getAllProducts, deleteCategoryAndProducts } from "../api";
 import { setAllProducts } from "../context/actions/productActions";
 
 const DBNewItem = () => {
@@ -23,19 +23,33 @@ const DBNewItem = () => {
   const [isLoading, setisLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageDownloadURL, setImageDownloadURL] = useState(null);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
   const fileInputRef = useRef(null);
   const dispatch = useDispatch();
 
-  // Load custom categories saved in localStorage
+  // Load custom categories saved in localStorage and filter out deleted ones
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("custom_categories") || "[]");
-      if (saved && saved.length > 0) {
-        const catMap = new Map();
-        defaultStatuses.forEach((s) => catMap.set(s.category.toLowerCase(), s));
-        saved.forEach((c) => catMap.set(c.category.toLowerCase(), c));
-        setCategoriesList(Array.from(catMap.values()));
-      }
+      const deletedCats = new Set(
+        JSON.parse(localStorage.getItem("deleted_categories") || "[]").map((c) =>
+          c.toLowerCase()
+        )
+      );
+
+      const catMap = new Map();
+      defaultStatuses.forEach((s) => {
+        if (!deletedCats.has(s.category.toLowerCase())) {
+          catMap.set(s.category.toLowerCase(), s);
+        }
+      });
+      saved.forEach((c) => {
+        if (!deletedCats.has(c.category.toLowerCase())) {
+          catMap.set(c.category.toLowerCase(), c);
+        }
+      });
+      setCategoriesList(Array.from(catMap.values()));
     } catch (e) {}
   }, []);
 
@@ -67,6 +81,15 @@ const DBNewItem = () => {
       category: catKey,
     };
 
+    // Remove from deleted_categories if previously deleted
+    try {
+      const deletedCats = JSON.parse(
+        localStorage.getItem("deleted_categories") || "[]"
+      );
+      const filteredDeleted = deletedCats.filter((c) => c !== catKey);
+      localStorage.setItem("deleted_categories", JSON.stringify(filteredDeleted));
+    } catch (e) {}
+
     // Check if category already exists
     const exists = categoriesList.some((c) => c.category.toLowerCase() === catKey);
     if (exists) {
@@ -91,6 +114,75 @@ const DBNewItem = () => {
     setNewCatInput("");
     dispatch(alertSuccess(`Category "${formattedTitle}" added!`));
     setTimeout(() => dispatch(alertNULL()), 2500);
+  };
+
+  // Confirm delete category and all its products from database
+  const handleConfirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    setIsDeletingCategory(true);
+
+    try {
+      const catKey = categoryToDelete.category.toLowerCase();
+
+      // 1. Delete all products belonging to this category in MongoDB Atlas
+      await deleteCategoryAndProducts(catKey);
+
+      // 2. Remove category from UI list
+      const updatedList = categoriesList.filter(
+        (c) => c.category.toLowerCase() !== catKey
+      );
+      setCategoriesList(updatedList);
+
+      // 3. Remove from custom_categories in localStorage if present
+      try {
+        const savedCustom = JSON.parse(
+          localStorage.getItem("custom_categories") || "[]"
+        );
+        const filteredCustom = savedCustom.filter(
+          (c) => c.category.toLowerCase() !== catKey
+        );
+        localStorage.setItem(
+          "custom_categories",
+          JSON.stringify(filteredCustom)
+        );
+
+        // 4. Record in deleted_categories so it stays removed across sessions & Menu
+        const deletedCats = JSON.parse(
+          localStorage.getItem("deleted_categories") || "[]"
+        );
+        if (!deletedCats.includes(catKey)) {
+          deletedCats.push(catKey);
+          localStorage.setItem(
+            "deleted_categories",
+            JSON.stringify(deletedCats)
+          );
+        }
+      } catch (e) {}
+
+      // 5. If currently selected category was deleted, reset selection
+      if (category === catKey) {
+        setCategory(null);
+      }
+
+      // 6. Refetch products to update Redux store and all views
+      const updatedProducts = await getAllProducts();
+      if (updatedProducts) {
+        dispatch(setAllProducts(updatedProducts));
+      }
+
+      dispatch(
+        alertSuccess(
+          `Category "${categoryToDelete.title}" and its products deleted!`
+        )
+      );
+      setTimeout(() => dispatch(alertNULL()), 3000);
+    } catch (err) {
+      dispatch(alertDanger("Failed to delete category"));
+      setTimeout(() => dispatch(alertNULL()), 3000);
+    } finally {
+      setIsDeletingCategory(false);
+      setCategoryToDelete(null);
+    }
   };
 
   // Fast client-side image compression using Canvas
@@ -220,21 +312,38 @@ const DBNewItem = () => {
           stateValue={itemName}
         />
 
-        {/* Categories Selector with + Create Category */}
+        {/* Categories Selector with + Create Category & Hover Delete Cross */}
         <div className="w-full flex items-center justify-start gap-3 flex-wrap py-2">
           {categoriesList &&
             categoriesList.map((data) => (
-              <p
-                key={data.id}
-                onClick={() => setCategory(data.category)}
-                className={`px-4 py-2.5 rounded-xl text-lg font-semibold cursor-pointer hover:shadow-md border border-gray-200 backdrop-blur-md transition-all duration-150 ${
-                  data.category === category
-                    ? "bg-red-500 text-white shadow-md shadow-red-200 border-red-500"
-                    : "bg-white/80 text-textColor hover:border-red-300"
-                }`}
+              <div
+                key={data.id || data.category}
+                className="relative group inline-flex items-center"
               >
-                {data.title}
-              </p>
+                <p
+                  onClick={() => setCategory(data.category)}
+                  className={`px-4 py-2.5 rounded-xl text-lg font-semibold cursor-pointer hover:shadow-md border border-gray-200 backdrop-blur-md transition-all duration-150 ${
+                    data.category === category
+                      ? "bg-red-500 text-white shadow-md shadow-red-200 border-red-500"
+                      : "bg-white/80 text-textColor hover:border-red-300"
+                  }`}
+                >
+                  {data.title}
+                </p>
+
+                {/* Small cross button on top hover */}
+                <button
+                  type="button"
+                  title={`Delete category ${data.title}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCategoryToDelete(data);
+                  }}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 shadow-md cursor-pointer hover:scale-110 z-10"
+                >
+                  <span className="text-xs font-bold leading-none">✕</span>
+                </button>
+              </div>
             ))}
 
           {/* Plus / Add Category Box */}
@@ -361,6 +470,46 @@ const DBNewItem = () => {
           {isSubmitting ? "Saving Dish..." : "Save Dish"}
         </motion.button>
       </div>
+
+      {/* Category Deletion Confirmation Modal */}
+      {categoryToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center text-center gap-3 border border-gray-100"
+          >
+            <h3 className="text-xl font-bold text-headingColor">
+              Delete "{categoryToDelete.title}" Category?
+            </h3>
+
+            <p className="text-sm text-gray-500 font-medium leading-relaxed">
+              Are you sure? It will delete all your data regarding that category.
+            </p>
+
+            <div className="w-full flex items-center justify-center gap-3 pt-3">
+              <button
+                type="button"
+                disabled={isDeletingCategory}
+                onClick={() => setCategoryToDelete(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition-all cursor-pointer"
+              >
+                No
+              </button>
+
+              <button
+                type="button"
+                disabled={isDeletingCategory}
+                onClick={handleConfirmDeleteCategory}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isDeletingCategory ? "Deleting..." : "Yes"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

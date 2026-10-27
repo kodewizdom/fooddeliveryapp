@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  MdLogout,
-  MdSearch,
-  BsToggles2,
-  BsFillBellFill,
-} from "../assets/icons";
+import { MdLogout } from "../assets/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { buttonClick } from "../animations";
 import { useNavigate } from "react-router-dom";
@@ -32,22 +27,7 @@ const DBHeader = () => {
         )}
       </p>
       <div className="flex items-center justify-center gap-4">
-        <div className="flex items-center justify-center gap-3 px-4 py-2 bg-lightOverlay backdrop-blur-md rounded-md shadow-md">
-          <MdSearch className="text-gray-400 text-2xl" />
-          <input
-            type="text"
-            placeholder="Search here..."
-            className="border-none outline-none bg-transparent w-32 text-base font-semibold text-textColor"
-          />
-          <BsToggles2 className="text-gray-400 text-2xl" />
-        </div>
 
-        <motion.div
-          {...buttonClick}
-          className="w-10 h-10 rounded-md cursor-pointer bg-lightOverlay backdrop-blur-md shadow-md flex items-center justify-center"
-        >
-          <BsFillBellFill className="text-gray-400 text-xl" />
-        </motion.div>
 
         <div className="flex items-center justify-center gap-2">
           <div className="w-10 h-10 rounded-full shadow-md cursor-pointer overflow-hidden">

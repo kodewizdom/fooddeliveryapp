@@ -50,12 +50,12 @@ functionApp.use("/api/users", userRoute);
 const productRoute = require("./routes/products");
 functionApp.use("/api/products", productRoute);
 
-// Mount under the exact path called by client/src/api/index.js:
-// http://localhost:5001/fullstack-food-app02/us-central1/app
+// Mount under both the legacy path and root for flexible cloud hosting (Render, Railway, Vercel, etc.)
 app.use("/fullstack-food-app02/us-central1/app", functionApp);
+app.use("/", functionApp);
 
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`Backend server successfully running on http://localhost:${PORT}`);
+  console.log(`Backend server successfully running on port ${PORT}`);
   console.log(`Endpoint: http://localhost:${PORT}/fullstack-food-app02/us-central1/app`);
 });
