@@ -218,36 +218,8 @@ router.post("/create-checkout-session", async (req, res) => {
       return res.status(400).send({ success: false, msg: "Cart is empty" });
     }
 
-    // Clean up any previous uncompleted/unpaid checkout drafts for this user
-    await Order.deleteMany({ userId, status: "pending_payment" });
-
-    // Pre-create the Order document in MongoDB so full items, names, prices,
-    // and imageURLs are safely stored with zero character limitations.
-    const newOrder = await Order.create({
-      orderId,
-      userId,
-      items: cart,
-      total: Number(total),
-      sts: "preparing",
-      status: "pending_payment",
-      customer: {
-        email: user?.email || "",
-        name: user?.name || "Customer",
-      },
-      shipping_details: {
-        name: user?.name || "Customer",
-      },
-      intentId: "",
-    });
-
-    // In Stripe customer metadata, store ONLY lightweight identifiers (<50 chars, Stripe limit is 500)
-    const customer = await stripe.customers.create({
-      metadata: {
-        user_id: userId.slice(0, 500),
-        order_id: String(orderId),
-        total: String(total),
-      },
-    });
+    // Clean up any previous uncompleted/unpaid checkout drafts in background
+    Order.deleteMany({ userId, status: "pending_payment" }).catch(() => {});
 
     // Safely format line items for Stripe:
     // Only pass images if it is a valid HTTP/HTTPS URL (Stripe rejects data: URIs)
@@ -275,43 +247,62 @@ router.post("/create-checkout-session", async (req, res) => {
       };
     });
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      shipping_address_collection: { allowed_countries: ["IN"] },
-      shipping_options: [
-        {
-          shipping_rate_data: {
-            type: "fixed_amount",
-            fixed_amount: { amount: 0, currency: "inr" },
-            display_name: "Free Shipping",
-            delivery_estimate: {
-              minimum: { unit: "hour", value: 2 },
-              maximum: { unit: "hour", value: 4 },
+    // Execute Order creation in MongoDB and Stripe session creation IN PARALLEL
+    const [newOrder, session] = await Promise.all([
+      Order.create({
+        orderId,
+        userId,
+        items: cart,
+        total: Number(total),
+        sts: "preparing",
+        status: "pending_payment",
+        customer: {
+          email: user?.email || "",
+          name: user?.name || "Customer",
+        },
+        shipping_details: {
+          name: user?.name || "Customer",
+        },
+        intentId: "",
+      }),
+      stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        customer_email: user?.email || undefined,
+        shipping_address_collection: { allowed_countries: ["IN"] },
+        shipping_options: [
+          {
+            shipping_rate_data: {
+              type: "fixed_amount",
+              fixed_amount: { amount: 0, currency: "inr" },
+              display_name: "Free Express Delivery",
+              delivery_estimate: {
+                minimum: { unit: "hour", value: 1 },
+                maximum: { unit: "hour", value: 2 },
+              },
             },
           },
+        ],
+        phone_number_collection: {
+          enabled: true,
         },
-      ],
-      phone_number_collection: {
-        enabled: true,
-      },
-      line_items,
-      customer: customer.id,
-      metadata: {
-        order_id: String(orderId),
-        user_id: userId,
-      },
-      mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/checkout-success?order_id=${orderId}`,
-      cancel_url: `${process.env.CLIENT_URL}/?cancelled_order=${orderId}`,
-    });
+        line_items,
+        metadata: {
+          order_id: String(orderId),
+          user_id: userId,
+        },
+        mode: "payment",
+        success_url: `${process.env.CLIENT_URL}/checkout-success?order_id=${orderId}`,
+        cancel_url: `${process.env.CLIENT_URL}/?cancelled_order=${orderId}`,
+      }),
+    ]);
 
-    newOrder.intentId = session.id;
-    await newOrder.save();
+    // Update intentId asynchronously without blocking client redirect
+    Order.updateOne({ _id: newOrder._id }, { intentId: session.id }).catch(() => {});
 
-    res.send({ url: session.url });
+    return res.send({ url: session.url });
   } catch (err) {
     console.error("Stripe Checkout Error:", err);
-    res.status(500).send({ success: false, msg: `Stripe Error: ${err.message}` });
+    return res.status(500).send({ success: false, msg: `Stripe Error: ${err.message}` });
   }
 });
 

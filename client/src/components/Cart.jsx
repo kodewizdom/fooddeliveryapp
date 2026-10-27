@@ -32,6 +32,8 @@ const Cart = () => {
   const user = useSelector((state) => state.user);
   const [total, setTotal] = useState(0);
 
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
   useEffect(() => {
     let tot = 0;
     if (cart && cart.length > 0) {
@@ -47,6 +49,8 @@ const Cart = () => {
   };
 
   const handleCheckOut = async () => {
+    if (isCheckingOut) return;
+
     if (!user) {
       dispatch(alertWarning("Please sign in to proceed with payment"));
       setTimeout(() => {
@@ -63,6 +67,7 @@ const Cart = () => {
       total: total,
     };
 
+    setIsCheckingOut(true);
     dispatch(alertSuccess("Connecting to online payment..."));
     try {
       const res = await axios.post(
@@ -72,6 +77,7 @@ const Cart = () => {
       if (res.data && res.data.url) {
         window.location.href = res.data.url;
       } else {
+        setIsCheckingOut(false);
         dispatch(
           alertWarning(
             "Payment session could not be created. Please verify Stripe credentials."
@@ -80,6 +86,7 @@ const Cart = () => {
         setTimeout(() => dispatch(alertNULL()), 3500);
       }
     } catch (err) {
+      setIsCheckingOut(false);
       dispatch(
         alertDanger(err.response?.data?.msg || "Failed to initialize payment")
       );
@@ -129,10 +136,40 @@ const Cart = () => {
               </div>
               <motion.div
                 {...buttonClick}
-                className="bg-orange-500 hover:bg-orange-600 w-[85%] py-3 text-xl text-white font-semibold drop-shadow-md rounded-2xl cursor-pointer text-center transition-all duration-150 shadow-lg"
-                onClick={handleCheckOut}
+                className={`w-[85%] py-3 text-xl text-white font-semibold drop-shadow-md rounded-2xl text-center transition-all duration-150 shadow-lg flex items-center justify-center gap-3 ${
+                  isCheckingOut
+                    ? "bg-orange-400 cursor-not-allowed opacity-90"
+                    : "bg-orange-500 hover:bg-orange-600 cursor-pointer"
+                }`}
+                onClick={!isCheckingOut ? handleCheckOut : undefined}
               >
-                Pay Online
+                {isCheckingOut ? (
+                  <>
+                    <svg
+                      className="animate-spin h-6 w-6 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span>Opening Payment...</span>
+                  </>
+                ) : (
+                  "Pay Online"
+                )}
               </motion.div>
             </div>
           </>
